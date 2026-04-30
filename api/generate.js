@@ -43,6 +43,10 @@ export default async function handler(req) {
   }
 
   const byokKey = req.headers.get('x-byok-key');
+  const adminBypass = req.headers.get('x-admin-bypass');
+  const adminToken = process.env.ADMIN_BYPASS_TOKEN;
+  const isAdmin = adminToken && adminBypass && adminBypass === adminToken;
+
   let apiKey;
   let demoRemaining = null;
 
@@ -60,18 +64,20 @@ export default async function handler(req) {
       );
     }
 
-    const ip = (req.headers.get('x-forwarded-for') || '').split(',')[0].trim() || 'unknown';
-    const limit = await checkDemoRateLimit(ip);
-    if (!limit.ok) {
-      return new Response(
-        JSON.stringify({
-          error: 'demo_limit',
-          message: 'Daily demo limit reached. To continue using the app today, enter your own Anthropic API key — it stays in your browser only.',
-        }),
-        { status: 429, headers: { 'Content-Type': 'application/json' } }
-      );
+    if (!isAdmin) {
+      const ip = (req.headers.get('x-forwarded-for') || '').split(',')[0].trim() || 'unknown';
+      const limit = await checkDemoRateLimit(ip);
+      if (!limit.ok) {
+        return new Response(
+          JSON.stringify({
+            error: 'demo_limit',
+            message: 'Daily demo limit reached. To continue using the app today, enter your own Anthropic API key — it stays in your browser only.',
+          }),
+          { status: 429, headers: { 'Content-Type': 'application/json' } }
+        );
+      }
+      demoRemaining = limit.remaining;
     }
-    demoRemaining = limit.remaining;
   }
 
   const body = await req.text();

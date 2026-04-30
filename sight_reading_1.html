@@ -1757,11 +1757,27 @@ function callAnthropic(body) {
     });
   }
 
-  // Deployed: hit our proxy. Forward BYOK key as a header if user has set one.
+  // Deployed: hit our proxy. Forward BYOK key or admin bypass token if present.
   const headers = { 'Content-Type': 'application/json' };
   if (byokKey) headers['x-byok-key'] = byokKey;
+  const adminToken = localStorage.getItem('admin_bypass_token');
+  if (adminToken) headers['x-admin-bypass'] = adminToken;
   return fetch('/api/generate', { method: 'POST', headers, body });
 }
+
+// On page load, check for ?admin=TOKEN in the URL.
+// If present, save it to localStorage and remove from URL so it's not shared accidentally.
+(function captureAdminToken() {
+  const params = new URLSearchParams(window.location.search);
+  const token = params.get('admin');
+  if (token) {
+    localStorage.setItem('admin_bypass_token', token);
+    params.delete('admin');
+    const newSearch = params.toString();
+    const newUrl = window.location.pathname + (newSearch ? '?' + newSearch : '') + window.location.hash;
+    window.history.replaceState({}, '', newUrl);
+  }
+})();
 
 async function handleProxyError(response) {
   // Returns a thrown error if the proxy returned a structured failure (demo limit, etc.)
@@ -1800,6 +1816,19 @@ function updateKeyStatus() {
   const action = document.getElementById('key-status-action');
   if (!el || !text || !action) return;
   const hasKey = !!localStorage.getItem('anthropic_api_key');
+  const adminMode = !!localStorage.getItem('admin_bypass_token');
+
+  if (adminMode) {
+    el.classList.add('byok');
+    text.textContent = 'Admin mode — unlimited';
+    action.textContent = 'Exit admin mode';
+    action.onclick = () => {
+      localStorage.removeItem('admin_bypass_token');
+      updateKeyStatus();
+    };
+    return;
+  }
+
   if (hasKey) {
     el.classList.add('byok');
     text.textContent = 'Using your API key';
