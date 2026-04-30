@@ -2384,10 +2384,8 @@ function genNext() {
     updateGenStats();
     saveToStorage();
   }
-  document.getElementById('gen-card').style.display = 'none';
-  document.getElementById('gen-actions').style.display = 'none';
-  document.getElementById('gen-btn').style.display = '';
   stopMetronome('gen');
+  generateExercise();
 }
 
 function genSkip() {
@@ -2398,10 +2396,8 @@ function genSkip() {
     updateGenStats();
     saveToStorage();
   }
-  document.getElementById('gen-card').style.display = 'none';
-  document.getElementById('gen-actions').style.display = 'none';
-  document.getElementById('gen-btn').style.display = '';
   stopMetronome('gen');
+  generateExercise();
 }
 
 function updateGenStats() {
