@@ -1,0 +1,6 @@
+{
+  "name": "sight-reading-app",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Piano sight reading practice app — generates exercises via Anthropic Claude API."
+}

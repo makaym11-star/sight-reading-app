@@ -1,0 +1,2547 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sight Reading Practice</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/opensheetmusicdisplay@1.9.3/build/opensheetmusicdisplay.min.js"></script>
+<style>
+  :root {
+    --bg: #0e0e0e;
+    --surface: #161616;
+    --surface2: #1e1e1e;
+    --surface3: #272727;
+    --border: #2e2e2e;
+    --border2: #3a3a3a;
+    --text: #f0ede6;
+    --text2: #a09890;
+    --text3: #5c5550;
+    --accent: #c8a96e;
+    --accent2: #8b6f3e;
+    --accent-dim: rgba(200,169,110,0.12);
+    --green: #6a9e6a;
+    --green-dim: rgba(106,158,106,0.15);
+    --red: #9e6a6a;
+    --red-dim: rgba(158,106,106,0.15);
+    --blue: #6a8a9e;
+    --blue-dim: rgba(106,138,158,0.15);
+    --radius: 8px;
+    --radius-lg: 14px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 300;
+    min-height: 100vh;
+    line-height: 1.6;
+  }
+
+  /* LAYOUT */
+  .app {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 2rem 1.5rem 4rem;
+  }
+
+  /* HEADER */
+  .app-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 2.5rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .app-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.6rem;
+    font-weight: 400;
+    color: var(--text);
+    letter-spacing: 0.01em;
+  }
+
+  .app-title span {
+    color: var(--accent);
+    font-style: italic;
+  }
+
+  /* MODE TOGGLE */
+  .mode-toggle {
+    display: flex;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 3px;
+    gap: 2px;
+  }
+
+  .mode-btn {
+    padding: 7px 16px;
+    border: none;
+    border-radius: 6px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    font-weight: 400;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: transparent;
+    color: var(--text2);
+  }
+
+  .mode-btn.active {
+    background: var(--surface3);
+    color: var(--accent);
+    border: 1px solid var(--border2);
+  }
+
+  /* API KEY BANNER */
+  .api-banner {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-left: 3px solid var(--accent);
+    border-radius: var(--radius);
+    padding: 1rem 1.25rem;
+    margin-bottom: 1.5rem;
+    display: none;
+  }
+
+  .api-banner.visible { display: block; }
+
+  .api-banner-title {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--accent);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  .api-banner p {
+    font-size: 13px;
+    color: var(--text2);
+    margin-bottom: 10px;
+  }
+
+  .api-input-row {
+    display: flex;
+    gap: 8px;
+  }
+
+  .api-input {
+    flex: 1;
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius);
+    padding: 8px 12px;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    outline: none;
+  }
+
+  .api-input:focus { border-color: var(--accent2); }
+
+  /* PANELS */
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  /* FILTERS */
+  .filters {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1.25rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .filters-title {
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text3);
+    margin-bottom: 1rem;
+  }
+
+  .filters-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 1rem;
+  }
+
+  .filter-group label {
+    display: block;
+    font-size: 11px;
+    color: var(--text2);
+    margin-bottom: 6px;
+    letter-spacing: 0.04em;
+  }
+
+  select, input[type="range"] {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    padding: 7px 10px;
+    outline: none;
+    cursor: pointer;
+    appearance: none;
+  }
+
+  select:focus { border-color: var(--accent2); }
+
+  /* GENERATED CONTROLS */
+  .gen-controls {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1.25rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .gen-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1rem;
+  }
+
+  .diff-slider-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .diff-slider-row input[type="range"] {
+    flex: 1;
+    padding: 0;
+    height: 4px;
+    border: none;
+    background: var(--surface3);
+    accent-color: var(--accent);
+  }
+
+  .diff-val {
+    font-size: 18px;
+    font-weight: 500;
+    color: var(--accent);
+    min-width: 24px;
+    text-align: center;
+    font-family: 'Playfair Display', serif;
+  }
+
+  /* CHALLENGE TARGETS */
+  .challenge-section {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border);
+  }
+
+  .challenge-section label {
+    display: block;
+    font-size: 11px;
+    color: var(--text2);
+    margin-bottom: 8px;
+    letter-spacing: 0.04em;
+  }
+
+  .challenge-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .challenge-tag {
+    padding: 5px 11px;
+    border-radius: 20px;
+    border: 1px solid var(--border2);
+    background: var(--surface2);
+    color: var(--text2);
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.15s;
+    user-select: none;
+  }
+
+  .challenge-tag:hover { border-color: var(--accent2); color: var(--text); }
+  .challenge-tag.selected { background: var(--accent-dim); border-color: var(--accent); color: var(--accent); }
+  .challenge-tag.disabled { opacity: 0.3; pointer-events: none; }
+
+  /* PIECE CARD */
+  .piece-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+    margin-bottom: 1.25rem;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .piece-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--accent), transparent);
+  }
+
+  .piece-era {
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 6px;
+  }
+
+  .piece-composer {
+    font-size: 12px;
+    color: var(--text2);
+    margin-bottom: 4px;
+  }
+
+  .piece-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.4rem;
+    font-weight: 500;
+    color: var(--text);
+    margin-bottom: 4px;
+    line-height: 1.3;
+  }
+
+  .piece-sub {
+    font-size: 12px;
+    color: var(--text3);
+    font-style: italic;
+    margin-bottom: 1rem;
+  }
+
+  .piece-meta {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 1.25rem;
+  }
+
+  .meta-tag {
+    font-size: 11px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    border: 1px solid var(--border2);
+    color: var(--text2);
+    background: var(--surface2);
+  }
+
+  .meta-tag.diff {
+    border-color: var(--accent2);
+    color: var(--accent);
+    background: var(--accent-dim);
+  }
+
+  .meta-tag.key {
+    border-color: var(--blue);
+    color: var(--blue);
+    background: var(--blue-dim);
+  }
+
+  .meta-tag.tempo {
+    border-color: var(--green);
+    color: var(--green);
+    background: var(--green-dim);
+  }
+
+  /* IMSLP BUTTON */
+  .imslp-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 9px 18px;
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 400;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .imslp-btn:hover {
+    background: var(--surface3);
+    border-color: var(--accent2);
+    color: var(--accent);
+  }
+
+  .imslp-btn svg { opacity: 0.6; }
+  .imslp-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  /* SCORE CONTAINER */
+  .score-container {
+    background: #fff;
+    border-radius: var(--radius);
+    padding: 1rem;
+    margin-bottom: 1rem;
+    min-height: 200px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .score-loading {
+    color: #888;
+    font-size: 13px;
+    font-family: 'DM Sans', sans-serif;
+    text-align: center;
+  }
+
+  #osmd-container { width: 100%; }
+
+  /* GENERATE BUTTON */
+  .generate-btn {
+    width: 100%;
+    padding: 11px;
+    background: var(--accent-dim);
+    border: 1px solid var(--accent2);
+    border-radius: var(--radius);
+    color: var(--accent);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+    margin-bottom: 1rem;
+    letter-spacing: 0.04em;
+  }
+
+  .generate-btn:hover { background: rgba(200,169,110,0.2); }
+  .generate-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .key-status {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-size: 11px;
+    color: var(--text3);
+    margin: -0.5rem 0 1rem 0;
+    letter-spacing: 0.04em;
+  }
+  .key-status .dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--text3);
+  }
+  .key-status.byok .dot { background: var(--accent); }
+  .key-status.byok { color: var(--accent); }
+  .key-status a {
+    color: var(--text3);
+    text-decoration: underline;
+    cursor: pointer;
+    margin-left: 4px;
+  }
+  .key-status a:hover { color: var(--text); }
+
+  /* METRONOME */
+  .metronome {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1.25rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .metro-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+  }
+
+  .metro-title {
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text3);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .beat-indicator {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--text3);
+    transition: background 0.05s;
+  }
+
+  .beat-indicator.active { background: var(--accent); }
+
+  .metro-toggle {
+    font-size: 11px;
+    padding: 4px 12px;
+    border-radius: 20px;
+    border: 1px solid var(--border2);
+    background: transparent;
+    color: var(--text2);
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: 'DM Sans', sans-serif;
+  }
+
+  .metro-toggle.on {
+    border-color: var(--green);
+    color: var(--green);
+    background: var(--green-dim);
+  }
+
+  .metro-controls {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .bpm-display {
+    font-family: 'Playfair Display', serif;
+    font-size: 2rem;
+    font-weight: 400;
+    color: var(--text);
+    min-width: 70px;
+    text-align: center;
+  }
+
+  .bpm-label {
+    font-size: 10px;
+    color: var(--text3);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    text-align: center;
+    margin-top: -4px;
+  }
+
+  .bpm-col { display: flex; flex-direction: column; align-items: center; }
+
+  .bpm-slider {
+    flex: 1;
+    min-width: 120px;
+    accent-color: var(--accent);
+    height: 4px;
+    border: none;
+    background: var(--surface3);
+    padding: 0;
+  }
+
+  .metro-btns {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+  }
+
+  .metro-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 1px solid var(--border2);
+    background: var(--surface2);
+    color: var(--text2);
+    font-size: 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+    font-family: 'DM Sans', sans-serif;
+    line-height: 1;
+  }
+
+  .metro-btn:hover { border-color: var(--accent2); color: var(--accent); }
+
+  .tap-btn {
+    padding: 6px 14px;
+    border-radius: var(--radius);
+    border: 1px solid var(--border2);
+    background: var(--surface2);
+    color: var(--text2);
+    font-size: 11px;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+
+  .tap-btn:hover { border-color: var(--accent2); color: var(--text); }
+  .tap-btn:active { background: var(--accent-dim); }
+
+  .subdivision-row {
+    display: flex;
+    gap: 6px;
+    margin-top: 10px;
+    align-items: center;
+  }
+
+  .subdivision-row span {
+    font-size: 11px;
+    color: var(--text3);
+    letter-spacing: 0.04em;
+  }
+
+  .sub-btn {
+    padding: 4px 10px;
+    border-radius: 20px;
+    border: 1px solid var(--border2);
+    background: transparent;
+    color: var(--text2);
+    font-size: 11px;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    transition: all 0.15s;
+  }
+
+  .sub-btn.active {
+    border-color: var(--accent2);
+    color: var(--accent);
+    background: var(--accent-dim);
+  }
+
+  /* ACTIONS */
+  .actions {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 1.25rem;
+    flex-wrap: wrap;
+  }
+
+  .btn {
+    padding: 10px 20px;
+    border-radius: var(--radius);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 400;
+    cursor: pointer;
+    transition: all 0.15s;
+    border: 1px solid var(--border2);
+    background: var(--surface2);
+    color: var(--text);
+  }
+
+  .btn:hover { background: var(--surface3); }
+
+  .btn-primary {
+    background: var(--text);
+    color: var(--bg);
+    border-color: var(--text);
+    flex: 1;
+  }
+
+  .btn-primary:hover { opacity: 0.85; background: var(--text); }
+
+  .btn-feedback-easy {
+    border-color: var(--green);
+    color: var(--green);
+    background: var(--green-dim);
+    font-size: 12px;
+    padding: 8px 14px;
+  }
+
+  .btn-feedback-hard {
+    border-color: var(--red);
+    color: var(--red);
+    background: var(--red-dim);
+    font-size: 12px;
+    padding: 8px 14px;
+  }
+
+  .btn-regen {
+    border-color: var(--blue);
+    color: var(--blue);
+    background: var(--blue-dim);
+    font-size: 12px;
+    padding: 8px 14px;
+  }
+
+  /* STATS */
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-bottom: 1.25rem;
+  }
+
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 12px;
+    text-align: center;
+  }
+
+  .stat-val {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.5rem;
+    font-weight: 400;
+    color: var(--text);
+  }
+
+  .stat-lbl {
+    font-size: 10px;
+    color: var(--text3);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-top: 2px;
+  }
+
+  /* HISTORY */
+  .history-section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+  }
+
+  .history-header {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .history-title {
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text3);
+  }
+
+  .history-clear {
+    font-size: 11px;
+    color: var(--text3);
+    cursor: pointer;
+    background: none;
+    border: none;
+    font-family: 'DM Sans', sans-serif;
+    transition: color 0.15s;
+  }
+
+  .history-clear:hover { color: var(--red); }
+
+  .history-list {
+    max-height: 240px;
+    overflow-y: auto;
+  }
+
+  .history-item {
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 12px;
+  }
+
+  .history-item:last-child { border-bottom: none; }
+
+  .history-item-title { color: var(--text2); }
+  .history-item-title strong { color: var(--text); font-weight: 400; }
+  .history-item-action {
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 20px;
+  }
+
+  .history-item-action.played {
+    background: var(--green-dim);
+    color: var(--green);
+  }
+
+  .history-item-action.skipped {
+    background: var(--surface3);
+    color: var(--text3);
+  }
+
+  .history-empty {
+    padding: 1.5rem;
+    text-align: center;
+    font-size: 12px;
+    color: var(--text3);
+    font-style: italic;
+  }
+
+  /* LOADING STATE */
+  .loading-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(14,14,14,0.85);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-lg);
+    z-index: 10;
+  }
+
+  .loading-text {
+    font-size: 13px;
+    color: var(--text2);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .spinner {
+    width: 16px;
+    height: 16px;
+    border: 1.5px solid var(--border2);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* SCROLLBAR */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+  /* UTILITY */
+  .hidden { display: none !important; }
+  .section-gap { margin-bottom: 1.25rem; }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- HEADER -->
+  <div class="app-header">
+    <div class="app-title">Sight <span>Reading</span></div>
+    <div class="mode-toggle">
+      <button class="mode-btn active" onclick="setMode('library')">IMSLP Library</button>
+      <button class="mode-btn" onclick="setMode('generated')">Generated</button>
+    </div>
+  </div>
+
+  <!-- API KEY BANNER — shows on demo limit or in local dev without a key -->
+  <div class="api-banner" id="api-banner">
+    <div class="api-banner-title">Daily demo limit reached</div>
+    <p>To continue using the app today, enter your own Anthropic API key. It's stored in your browser only and is sent directly to Anthropic — never to this app's server.</p>
+    <div class="api-input-row">
+      <input type="password" class="api-input" id="api-key-input" placeholder="sk-ant-..." />
+      <button class="btn" onclick="saveApiKey()" style="white-space:nowrap;padding:8px 16px;font-size:13px;">Save Key</button>
+    </div>
+  </div>
+
+  <!-- ==================== LIBRARY MODE ==================== -->
+  <div class="panel active" id="panel-library">
+
+    <!-- FILTERS -->
+    <div class="filters">
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:1rem;">
+        <div class="filters-title" style="margin-bottom:0;">Filters</div>
+        <div style="display:flex; gap:6px;">
+          <button class="btn" style="font-size:11px; padding:4px 12px;" onclick="resetQueue()">↺ Reset Queue</button>
+          <button class="btn" style="font-size:11px; padding:4px 12px; color:var(--text3);" onclick="resetSession()">Reset Session</button>
+        </div>
+      </div>
+      <div class="filters-grid">
+        <div class="filter-group">
+          <label>Difficulty</label>
+          <select id="lib-difficulty" onchange="applyLibraryFilters()">
+            <option value="all">All levels</option>
+            <option value="Beginner">Beginner</option>
+            <option value="Early Intermediate">Early Intermediate</option>
+            <option value="Late Intermediate">Late Intermediate</option>
+            <option value="Advanced">Advanced</option>
+            <option value="Virtuoso">Virtuoso</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label>Era</label>
+          <select id="lib-era" onchange="applyLibraryFilters()">
+            <option value="all">All eras</option>
+            <option value="Baroque">Baroque</option>
+            <option value="Classical">Classical</option>
+            <option value="Romantic">Romantic</option>
+            <option value="Modern">Modern</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label>Key Signature</label>
+          <select id="lib-key" onchange="applyLibraryFilters()">
+            <option value="all">All keys</option>
+            <optgroup label="Major">
+              <option>C major</option><option>G major</option><option>D major</option>
+              <option>A major</option><option>E major</option><option>B major</option>
+              <option>F# major</option><option>F major</option><option>Bb major</option>
+              <option>Eb major</option><option>Ab major</option><option>Db major</option>
+            </optgroup>
+            <optgroup label="Minor">
+              <option>A minor</option><option>E minor</option><option>B minor</option>
+              <option>F# minor</option><option>C# minor</option><option>G# minor</option>
+              <option>D minor</option><option>G minor</option><option>C minor</option>
+              <option>F minor</option><option>Bb minor</option><option>Eb minor</option>
+            </optgroup>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- POOL WARNING -->
+    <div id="lib-pool-warning" style="display:none; font-size:12px; color:var(--accent); background:var(--accent-dim); border:1px solid var(--accent2); border-radius:var(--radius); padding:8px 12px; margin-bottom:1rem;"></div>
+
+    <!-- PIECE CARD -->
+    <div class="piece-card" id="lib-card" style="position:relative;">
+      <div class="piece-era" id="lib-era-display"></div>
+      <div class="piece-composer" id="lib-composer"></div>
+      <div class="piece-title" id="lib-title"></div>
+      <div class="piece-sub" id="lib-sub"></div>
+      <div class="piece-meta" id="lib-meta"></div>
+      <button class="imslp-btn" id="lib-link" onclick="openOnIMSLP()">
+        <span id="lib-link-text">Open on IMSLP</span>
+        <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M2 10L10 2M10 2H4M10 2V8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+    </div>
+
+    <!-- METRONOME -->
+    <div class="metronome" id="lib-metronome">
+      <div class="metro-header">
+        <div class="metro-title">
+          <div class="beat-indicator" id="lib-beat"></div>
+          Metronome
+        </div>
+        <button class="metro-toggle" id="lib-metro-toggle" onclick="toggleMetronome('lib')">Off</button>
+      </div>
+      <div class="metro-controls">
+        <div class="bpm-col">
+          <div class="bpm-display" id="lib-bpm-display">80</div>
+          <div class="bpm-label">BPM</div>
+        </div>
+        <input type="range" class="bpm-slider" id="lib-bpm-slider" min="20" max="240" value="80" step="1"
+               oninput="updateBpm('lib', this.value)">
+        <div class="metro-btns">
+          <button class="metro-btn" onclick="adjustBpm('lib', -5)">−</button>
+          <button class="metro-btn" onclick="adjustBpm('lib', 5)">+</button>
+          <button class="tap-btn" onclick="tapTempo('lib')">Tap</button>
+        </div>
+      </div>
+      <div class="subdivision-row">
+        <span>Subdivision:</span>
+        <button class="sub-btn active" id="lib-sub-quarter" onclick="setSubdivision('lib','quarter')">♩ Quarter</button>
+        <button class="sub-btn" id="lib-sub-eighth" onclick="setSubdivision('lib','eighth')">♪ Eighth</button>
+      </div>
+    </div>
+
+    <!-- ACTIONS -->
+    <div class="actions">
+      <button class="btn btn-feedback-easy" onclick="libraryFeedback('easy')">Too Easy</button>
+      <button class="btn btn-primary" onclick="libraryNext()">Next Piece →</button>
+      <button class="btn" onclick="librarySkip()">Skip</button>
+      <button class="btn btn-feedback-hard" onclick="libraryFeedback('hard')">Too Hard</button>
+    </div>
+
+    <!-- STATS -->
+    <div class="stats-row">
+      <div class="stat-card"><div class="stat-val" id="lib-stat-played">0</div><div class="stat-lbl">Played</div></div>
+      <div class="stat-card"><div class="stat-val" id="lib-stat-skipped">0</div><div class="stat-lbl">Skipped</div></div>
+      <div class="stat-card"><div class="stat-val" id="lib-stat-streak">0</div><div class="stat-lbl">Streak</div></div>
+    </div>
+
+    <!-- HISTORY -->
+    <div class="history-section">
+      <div class="history-header">
+        <div class="history-title">Session History</div>
+        <button class="history-clear" onclick="clearHistory('lib')">Clear</button>
+      </div>
+      <div class="history-list" id="lib-history-list">
+        <div class="history-empty">No pieces played yet</div>
+      </div>
+    </div>
+
+  </div><!-- /panel-library -->
+
+  <!-- ==================== GENERATED MODE ==================== -->
+  <div class="panel" id="panel-generated">
+
+    <!-- GEN CONTROLS -->
+    <div class="gen-controls">
+      <div class="filters-title">Generation Parameters</div>
+      <div class="gen-grid">
+        <div class="filter-group">
+          <label>Difficulty (1–10)</label>
+          <div class="diff-slider-row">
+            <input type="range" id="gen-diff-slider" min="1" max="10" value="5" step="1"
+                   oninput="document.getElementById('gen-diff-val').textContent=this.value; saveToStorage()"
+                   onchange="triggerPreGen()">
+            <div class="diff-val" id="gen-diff-val">5</div>
+          </div>
+        </div>
+        <div class="filter-group">
+          <label>Key Signature</label>
+          <select id="gen-key" onchange="saveToStorage(); triggerPreGen()">
+            <option value="random">Random</option>
+            <optgroup label="Major">
+              <option>C major</option><option>G major</option><option>D major</option>
+              <option>A major</option><option>E major</option><option>B major</option>
+              <option>F# major</option><option>F major</option><option>Bb major</option>
+              <option>Eb major</option><option>Ab major</option><option>Db major</option>
+            </optgroup>
+            <optgroup label="Minor">
+              <option>A minor</option><option>E minor</option><option>B minor</option>
+              <option>F# minor</option><option>C# minor</option><option>G# minor</option>
+              <option>D minor</option><option>G minor</option><option>C minor</option>
+              <option>F minor</option><option>Bb minor</option><option>Eb minor</option>
+            </optgroup>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label>Time Signature</label>
+          <select id="gen-time" onchange="saveToStorage(); triggerPreGen()">
+            <option value="random">Random</option>
+            <option value="4/4">4/4</option>
+            <option value="3/4">3/4</option>
+            <option value="6/8">6/8</option>
+            <option value="2/4">2/4</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label>Length (bars)</label>
+          <select id="gen-bars" onchange="saveToStorage(); triggerPreGen()">
+            <option value="4">4 bars</option>
+            <option value="8" selected>8 bars</option>
+            <option value="16">16 bars</option>
+            <option value="32">32 bars</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label>Style</label>
+          <select id="gen-style" onchange="saveToStorage(); triggerPreGen()">
+            <option value="random">Random</option>
+            <option>Baroque</option>
+            <option>Classical</option>
+            <option>Romantic</option>
+            <option>Impressionist</option>
+            <option>Modern</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label>Hand Target</label>
+          <select id="gen-hand" onchange="updateHandTargetUI(); saveToStorage(); triggerPreGen()">
+            <option value="both">Both Hands</option>
+            <option value="right">Right Hand Only</option>
+            <option value="left">Left Hand Only</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="challenge-section">
+        <label>Challenge Targets (optional)</label>
+        <div class="challenge-tags" id="challenge-tags">
+          <div class="challenge-tag" data-val="accidentals" onclick="toggleChallenge(this)">Accidentals</div>
+          <div class="challenge-tag" data-val="syncopated rhythms" onclick="toggleChallenge(this)">Syncopated Rhythms</div>
+          <div class="challenge-tag" data-val="wide intervals" onclick="toggleChallenge(this)">Wide Intervals</div>
+          <div class="challenge-tag" data-val="hand independence" data-requires-both="true" onclick="toggleChallenge(this)">Hand Independence</div>
+          <div class="challenge-tag" data-val="dense chords" onclick="toggleChallenge(this)">Dense Chords</div>
+          <div class="challenge-tag" data-val="rapid passages" onclick="toggleChallenge(this)">Rapid Passages</div>
+          <div class="challenge-tag" data-val="counterpoint" onclick="toggleChallenge(this)">Counterpoint</div>
+          <div class="challenge-tag" data-val="irregular rhythms" onclick="toggleChallenge(this)">Irregular Rhythms</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- GENERATE BUTTON / ACTION BUTTONS (swap in same position) -->
+    <button class="generate-btn" id="gen-btn" onclick="generateExercise()">
+      ♩ Generate Exercise
+    </button>
+    <div class="actions" id="gen-actions" style="display:none;">
+      <button class="btn btn-regen" onclick="regenerate(-2)">Easier</button>
+      <button class="btn btn-regen" onclick="regenerate(0)">Regenerate</button>
+      <button class="btn btn-regen" onclick="regenerate(2)">Harder</button>
+      <button class="btn btn-primary" onclick="genNext()">Next →</button>
+      <button class="btn" onclick="genSkip()">Skip</button>
+    </div>
+
+    <!-- API KEY STATUS BADGE -->
+    <div class="key-status" id="key-status">
+      <span class="dot"></span>
+      <span id="key-status-text">Demo mode</span>
+      <a id="key-status-action"></a>
+    </div>
+
+    <!-- SCORE DISPLAY -->
+    <div class="piece-card" id="gen-card" style="position:relative; display:none;">
+      <div class="piece-era" id="gen-style-display"></div>
+      <div class="piece-title" id="gen-title" style="font-size:1.1rem;">Generated Exercise</div>
+      <div class="piece-meta" id="gen-meta"></div>
+      <div class="score-container">
+        <div id="osmd-container">
+          <div class="score-loading">Score will appear here</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- METRONOME -->
+    <div class="metronome" id="gen-metronome">
+      <div class="metro-header">
+        <div class="metro-title">
+          <div class="beat-indicator" id="gen-beat"></div>
+          Metronome
+        </div>
+        <button class="metro-toggle" id="gen-metro-toggle" onclick="toggleMetronome('gen')">Off</button>
+      </div>
+      <div class="metro-controls">
+        <div class="bpm-col">
+          <div class="bpm-display" id="gen-bpm-display">80</div>
+          <div class="bpm-label">BPM</div>
+        </div>
+        <input type="range" class="bpm-slider" id="gen-bpm-slider" min="20" max="240" value="80" step="1"
+               oninput="updateBpm('gen', this.value)">
+        <div class="metro-btns">
+          <button class="metro-btn" onclick="adjustBpm('gen', -5)">−</button>
+          <button class="metro-btn" onclick="adjustBpm('gen', 5)">+</button>
+          <button class="tap-btn" onclick="tapTempo('gen')">Tap</button>
+        </div>
+      </div>
+      <div class="subdivision-row">
+        <span>Subdivision:</span>
+        <button class="sub-btn active" id="gen-sub-quarter" onclick="setSubdivision('gen','quarter')">♩ Quarter</button>
+        <button class="sub-btn" id="gen-sub-eighth" onclick="setSubdivision('gen','eighth')">♪ Eighth</button>
+      </div>
+    </div>
+
+    <!-- STATS -->
+    <div class="stats-row">
+      <div class="stat-card"><div class="stat-val" id="gen-stat-played">0</div><div class="stat-lbl">Played</div></div>
+      <div class="stat-card"><div class="stat-val" id="gen-stat-skipped">0</div><div class="stat-lbl">Skipped</div></div>
+      <div class="stat-card"><div class="stat-val" id="gen-stat-streak">0</div><div class="stat-lbl">Streak</div></div>
+    </div>
+
+    <!-- HISTORY -->
+    <div class="history-section">
+      <div class="history-header">
+        <div class="history-title">Session History</div>
+        <button class="history-clear" onclick="clearHistory('gen')">Clear</button>
+      </div>
+      <div class="history-list" id="gen-history-list">
+        <div class="history-empty">No exercises generated yet</div>
+      </div>
+    </div>
+
+  </div><!-- /panel-generated -->
+
+</div><!-- /app -->
+
+<script>
+// ============================================================
+// PIECE DATABASE
+// ============================================================
+const PIECES = [
+  // BEGINNER — five-finger position, minimal shifts, simple rhythms
+  { composer:"J.S. Bach", title:"Polonaise in G Minor", sub:"Notebook for Anna Magdalena — BWV Anh. 119", diff:"Beginner", era:"Baroque", key:"G minor", bpm:80, tags:["Polonaise","Dance"], url:"https://imslp.org/wiki/Notebook_for_Anna_Magdalena_Bach_(Bach,_Johann_Sebastian)" },
+  { composer:"J.S. Bach", title:"Musette in D Major", sub:"Notebook for Anna Magdalena — BWV Anh. 126", diff:"Beginner", era:"Baroque", key:"D major", bpm:92, tags:["Dance","Simple"], url:"https://imslp.org/wiki/Notebook_for_Anna_Magdalena_Bach_(Bach,_Johann_Sebastian)" },
+  { composer:"J.S. Bach", title:"Polonaise in G Major", sub:"Notebook for Anna Magdalena — BWV Anh. 130", diff:"Beginner", era:"Baroque", key:"G major", bpm:80, tags:["Polonaise","Dance"], url:"https://imslp.org/wiki/Notebook_for_Anna_Magdalena_Bach_(Bach,_Johann_Sebastian)" },
+  { composer:"Cornelius Gurlitt", title:"Albumleaf in C Major", sub:"Op. 117, No. 1 — Anfangs-Stunden (First Lessons)", diff:"Beginner", era:"Romantic", key:"C major", bpm:88, tags:["Character piece","Pedagogical"], url:"https://imslp.org/wiki/Anfangs-Stunden,_Op.117_(Gurlitt,_Cornelius)" },
+  { composer:"Cornelius Gurlitt", title:"A Little Joke", sub:"Op. 117, No. 2 — Anfangs-Stunden (First Lessons)", diff:"Beginner", era:"Romantic", key:"C major", bpm:96, tags:["Character piece","Pedagogical"], url:"https://imslp.org/wiki/Anfangs-Stunden,_Op.117_(Gurlitt,_Cornelius)" },
+  { composer:"Cornelius Gurlitt", title:"Soldier's March", sub:"Op. 117, No. 7 — Anfangs-Stunden (First Lessons)", diff:"Beginner", era:"Romantic", key:"C major", bpm:104, tags:["March","Pedagogical"], url:"https://imslp.org/wiki/Anfangs-Stunden,_Op.117_(Gurlitt,_Cornelius)" },
+  { composer:"Cornelius Gurlitt", title:"Morning Prayer", sub:"Op. 117, No. 3 — Anfangs-Stunden (First Lessons)", diff:"Beginner", era:"Romantic", key:"F major", bpm:72, tags:["Character piece","Lyrical","Pedagogical"], url:"https://imslp.org/wiki/Anfangs-Stunden,_Op.117_(Gurlitt,_Cornelius)" },
+  { composer:"Friedrich Burgmüller", title:"La candeur (Frankness)", sub:"Op. 100, No. 1 — 25 Easy Studies", diff:"Beginner", era:"Romantic", key:"C major", bpm:88, tags:["Étude","Pedagogical"], url:"https://imslp.org/wiki/25_%C3%89tudes_faciles_et_progressives,_Op.100_(Burgm%C3%BCller,_Friedrich)" },
+  { composer:"Friedrich Burgmüller", title:"Arabesque", sub:"Op. 100, No. 2 — 25 Easy Studies", diff:"Beginner", era:"Romantic", key:"A minor", bpm:120, tags:["Arabesque","Pedagogical"], url:"https://imslp.org/wiki/25_%C3%89tudes_faciles_et_progressives,_Op.100_(Burgm%C3%BCller,_Friedrich)" },
+  { composer:"Friedrich Burgmüller", title:"Pastorale", sub:"Op. 100, No. 3 — 25 Easy Studies", diff:"Beginner", era:"Romantic", key:"F major", bpm:80, tags:["Pastorale","Pedagogical"], url:"https://imslp.org/wiki/25_%C3%89tudes_faciles_et_progressives,_Op.100_(Burgm%C3%BCller,_Friedrich)" },
+  { composer:"Friedrich Burgmüller", title:"La petite réunion", sub:"Op. 100, No. 4 — 25 Easy Studies", diff:"Beginner", era:"Romantic", key:"C major", bpm:92, tags:["Character piece","Pedagogical"], url:"https://imslp.org/wiki/25_%C3%89tudes_faciles_et_progressives,_Op.100_(Burgm%C3%BCller,_Friedrich)" },
+  { composer:"Carl Czerny", title:"Study in C Major", sub:"Op. 599, No. 1 — Practical Exercises for Beginners", diff:"Beginner", era:"Classical", key:"C major", bpm:96, tags:["Étude","Pedagogical"], url:"https://imslp.org/wiki/Practical_Exercises_for_Beginners,_Op.599_(Czerny,_Carl)" },
+  { composer:"Carl Czerny", title:"Study in G Major", sub:"Op. 599, No. 2 — Practical Exercises for Beginners", diff:"Beginner", era:"Classical", key:"G major", bpm:96, tags:["Étude","Pedagogical"], url:"https://imslp.org/wiki/Practical_Exercises_for_Beginners,_Op.599_(Czerny,_Carl)" },
+  { composer:"Carl Czerny", title:"Study in F Major", sub:"Op. 599, No. 3 — Practical Exercises for Beginners", diff:"Beginner", era:"Classical", key:"F major", bpm:92, tags:["Étude","Pedagogical"], url:"https://imslp.org/wiki/Practical_Exercises_for_Beginners,_Op.599_(Czerny,_Carl)" },
+  { composer:"Ferdinand Beyer", title:"Preparatory School Op. 101 No. 8", sub:"Elementary Method for the Piano", diff:"Beginner", era:"Classical", key:"C major", bpm:88, tags:["Étude","Pedagogical"], url:"https://imslp.org/wiki/Vorschule_im_Klavierspiel,_Op.101_(Beyer,_Ferdinand)" },
+  { composer:"Ferdinand Beyer", title:"Preparatory School Op. 101 No. 17", sub:"Elementary Method for the Piano", diff:"Beginner", era:"Classical", key:"G major", bpm:84, tags:["Étude","Pedagogical"], url:"https://imslp.org/wiki/Vorschule_im_Klavierspiel,_Op.101_(Beyer,_Ferdinand)" },
+  { composer:"Béla Bartók", title:"Children's Song", sub:"For Children Vol. 1, No. 1", diff:"Beginner", era:"Modern", key:"C major", bpm:80, tags:["Folk","Pedagogical"], url:"https://imslp.org/wiki/For_Children,_Sz.42_(Bart%C3%B3k,_B%C3%A9la)" },
+  { composer:"Béla Bartók", title:"Play Song", sub:"For Children Vol. 1, No. 3", diff:"Beginner", era:"Modern", key:"D minor", bpm:88, tags:["Folk","Pedagogical"], url:"https://imslp.org/wiki/For_Children,_Sz.42_(Bart%C3%B3k,_B%C3%A9la)" },
+  { composer:"Béla Bartók", title:"Pillow Dance", sub:"For Children Vol. 1, No. 5", diff:"Beginner", era:"Modern", key:"F major", bpm:76, tags:["Dance","Pedagogical"], url:"https://imslp.org/wiki/For_Children,_Sz.42_(Bart%C3%B3k,_B%C3%A9la)" },
+
+  { composer:"J.S. Bach", title:"Prelude in C Major", sub:"Well-Tempered Clavier, Book I — BWV 846", diff:"Early Intermediate", era:"Baroque", key:"C major", bpm:72, tags:["Prelude","Arpeggios"], url:"https://imslp.org/wiki/The_Well-Tempered_Clavier,_Book_I_(Bach,_Johann_Sebastian)" },
+  { composer:"J.S. Bach", title:"Invention No. 1", sub:"BWV 772 — Two-Part Invention", diff:"Early Intermediate", era:"Baroque", key:"C major", bpm:80, tags:["Invention","Counterpoint"], url:"https://imslp.org/wiki/Inventions,_BWV_772-786_(Bach,_Johann_Sebastian)" },
+  { composer:"J.S. Bach", title:"Invention No. 4", sub:"BWV 775 — Two-Part Invention", diff:"Early Intermediate", era:"Baroque", key:"D minor", bpm:76, tags:["Invention","Counterpoint"], url:"https://imslp.org/wiki/Inventions,_BWV_772-786_(Bach,_Johann_Sebastian)" },
+  { composer:"J.S. Bach", title:"Prelude in C Minor", sub:"Well-Tempered Clavier, Book I — BWV 847", diff:"Late Intermediate", era:"Baroque", key:"C minor", bpm:66, tags:["Prelude"], url:"https://imslp.org/wiki/The_Well-Tempered_Clavier,_Book_I_(Bach,_Johann_Sebastian)" },
+  { composer:"J.S. Bach", title:"French Suite No. 5", sub:"BWV 816 — Allemande", diff:"Late Intermediate", era:"Baroque", key:"G major", bpm:60, tags:["Suite","Dance"], url:"https://imslp.org/wiki/French_Suites,_BWV_812-817_(Bach,_Johann_Sebastian)" },
+  { composer:"Domenico Scarlatti", title:"Sonata in D minor", sub:"K. 9 / L. 413", diff:"Early Intermediate", era:"Baroque", key:"D minor", bpm:88, tags:["Sonata"], url:"https://imslp.org/wiki/Keyboard_Sonata_in_D_minor,_K.9_(Scarlatti,_Domenico)" },
+  { composer:"Domenico Scarlatti", title:"Sonata in A major", sub:"K. 208 / L. 238", diff:"Late Intermediate", era:"Baroque", key:"A major", bpm:66, tags:["Sonata","Lyrical"], url:"https://imslp.org/wiki/Keyboard_Sonata_in_A_major,_K.208_(Scarlatti,_Domenico)" },
+  { composer:"G.F. Handel", title:"Air and Variations", sub:"HWV 430 — The Harmonious Blacksmith", diff:"Early Intermediate", era:"Baroque", key:"E major", bpm:80, tags:["Theme and Variations"], url:"https://imslp.org/wiki/Keyboard_Suite_in_E_major,_HWV_430_(Handel,_George_Frideric)" },
+  { composer:"Wolfgang A. Mozart", title:"Piano Sonata No. 16", sub:"K. 545 — Sonata facile, 1st mvt", diff:"Early Intermediate", era:"Classical", key:"C major", bpm:120, tags:["Sonata"], url:"https://imslp.org/wiki/Piano_Sonata_No.16_in_C_major,_K.545_(Mozart,_Wolfgang_Amadeus)" },
+  { composer:"Wolfgang A. Mozart", title:"Piano Sonata No. 11", sub:"K. 331 — Rondo alla Turca", diff:"Early Intermediate", era:"Classical", key:"A major", bpm:126, tags:["Sonata","Rondo"], url:"https://imslp.org/wiki/Piano_Sonata_No.11_in_A_major,_K.331_(Mozart,_Wolfgang_Amadeus)" },
+  { composer:"Wolfgang A. Mozart", title:"Piano Sonata No. 15", sub:"K. 533 — 1st Movement", diff:"Late Intermediate", era:"Classical", key:"F major", bpm:116, tags:["Sonata"], url:"https://imslp.org/wiki/Piano_Sonata_No.15_in_F_major,_K.533_(Mozart,_Wolfgang_Amadeus)" },
+  { composer:"Joseph Haydn", title:"Piano Sonata in C Major", sub:"Hob. XVI:35 — 1st Movement", diff:"Early Intermediate", era:"Classical", key:"C major", bpm:120, tags:["Sonata"], url:"https://imslp.org/wiki/Piano_Sonata_in_C_major,_Hob.XVI:35_(Haydn,_Joseph)" },
+  { composer:"Muzio Clementi", title:"Sonatina Op. 36 No. 1", sub:"1st Movement — Allegro", diff:"Early Intermediate", era:"Classical", key:"C major", bpm:116, tags:["Sonatina"], url:"https://imslp.org/wiki/6_Sonatinas,_Op.36_(Clementi,_Muzio)" },
+  { composer:"Muzio Clementi", title:"Sonatina Op. 36 No. 3", sub:"1st Movement — Spiritoso", diff:"Early Intermediate", era:"Classical", key:"C major", bpm:120, tags:["Sonatina"], url:"https://imslp.org/wiki/6_Sonatinas,_Op.36_(Clementi,_Muzio)" },
+  { composer:"Muzio Clementi", title:"Sonatina Op. 36 No. 2", sub:"1st Movement — Allegretto", diff:"Early Intermediate", era:"Classical", key:"G major", bpm:112, tags:["Sonatina"], url:"https://imslp.org/wiki/6_Sonatinas,_Op.36_(Clementi,_Muzio)" },
+  { composer:"Muzio Clementi", title:"Sonatina Op. 36 No. 4", sub:"1st Movement — Con spirito", diff:"Early Intermediate", era:"Classical", key:"F major", bpm:116, tags:["Sonatina"], url:"https://imslp.org/wiki/6_Sonatinas,_Op.36_(Clementi,_Muzio)" },
+  { composer:"J.S. Bach", title:"Minuet in G Major", sub:"Notebook for Anna Magdalena — BWV Anh. 114", diff:"Early Intermediate", era:"Baroque", key:"G major", bpm:96, tags:["Minuet","Dance"], url:"https://imslp.org/wiki/Notebook_for_Anna_Magdalena_Bach_(Bach,_Johann_Sebastian)" },
+  { composer:"J.S. Bach", title:"Minuet in G Minor", sub:"Notebook for Anna Magdalena — BWV Anh. 115", diff:"Early Intermediate", era:"Baroque", key:"G minor", bpm:92, tags:["Minuet","Dance"], url:"https://imslp.org/wiki/Notebook_for_Anna_Magdalena_Bach_(Bach,_Johann_Sebastian)" },
+  { composer:"J.S. Bach", title:"Minuet in D Minor", sub:"Notebook for Anna Magdalena — BWV Anh. 132", diff:"Early Intermediate", era:"Baroque", key:"D minor", bpm:88, tags:["Minuet","Dance"], url:"https://imslp.org/wiki/Notebook_for_Anna_Magdalena_Bach_(Bach,_Johann_Sebastian)" },
+  { composer:"J.S. Bach", title:"March in D Major", sub:"Notebook for Anna Magdalena — BWV Anh. 122", diff:"Early Intermediate", era:"Baroque", key:"D major", bpm:100, tags:["March"], url:"https://imslp.org/wiki/Notebook_for_Anna_Magdalena_Bach_(Bach,_Johann_Sebastian)" },
+  { composer:"Wolfgang A. Mozart", title:"Minuet in F Major", sub:"K. 2 — Early keyboard piece", diff:"Early Intermediate", era:"Classical", key:"F major", bpm:104, tags:["Minuet"], url:"https://imslp.org/wiki/Minuet_in_F_major,_K.2_(Mozart,_Wolfgang_Amadeus)" },
+  { composer:"Wolfgang A. Mozart", title:"Minuet in G Major", sub:"K. 1e — Early keyboard piece", diff:"Early Intermediate", era:"Classical", key:"G major", bpm:100, tags:["Minuet"], url:"https://imslp.org/wiki/Minuet_in_G_major,_K.1e_(Mozart,_Wolfgang_Amadeus)" },
+  { composer:"Ludwig van Beethoven", title:"Sonatina in G Major", sub:"Anh. 5 No. 1 — 1st Movement", diff:"Early Intermediate", era:"Classical", key:"G major", bpm:112, tags:["Sonatina"], url:"https://imslp.org/wiki/Sonatina_in_G_major,_Anh.5_No.1_(Beethoven,_Ludwig_van)" },
+  { composer:"Daniel Türk", title:"Little Story", sub:"Kleine Klavierstücke — No. 1", diff:"Early Intermediate", era:"Classical", key:"C major", bpm:88, tags:["Character piece","Pedagogical"], url:"https://imslp.org/wiki/Kleine_Klavierst%C3%BCcke_(T%C3%BCrk,_Daniel_Gottlob)" },
+  { composer:"Daniel Türk", title:"Sonatina in C Major", sub:"Kleine Klavierstücke", diff:"Early Intermediate", era:"Classical", key:"C major", bpm:108, tags:["Sonatina","Pedagogical"], url:"https://imslp.org/wiki/Kleine_Klavierst%C3%BCcke_(T%C3%BCrk,_Daniel_Gottlob)" },
+  { composer:"Friedrich Kuhlau", title:"Sonatina Op. 55 No. 1", sub:"1st Movement — Allegro", diff:"Early Intermediate", era:"Classical", key:"C major", bpm:120, tags:["Sonatina"], url:"https://imslp.org/wiki/Piano_Sonatinas,_Op.55_(Kuhlau,_Friedrich)" },
+  { composer:"Friedrich Kuhlau", title:"Sonatina Op. 55 No. 2", sub:"1st Movement — Allegretto", diff:"Early Intermediate", era:"Classical", key:"G major", bpm:112, tags:["Sonatina"], url:"https://imslp.org/wiki/Piano_Sonatinas,_Op.55_(Kuhlau,_Friedrich)" },
+  { composer:"Anton Diabelli", title:"Sonatina Op. 151 No. 1", sub:"1st Movement — Andante cantabile", diff:"Early Intermediate", era:"Classical", key:"C major", bpm:96, tags:["Sonatina"], url:"https://imslp.org/wiki/Sonatinas,_Op.151_(Diabelli,_Anton)" },
+  { composer:"Erik Satie", title:"Gymnopédie No. 2", sub:"From Trois Gymnopédies", diff:"Early Intermediate", era:"Modern", key:"C major", bpm:72, tags:["Character piece","Slow"], url:"https://imslp.org/wiki/3_Gymnop%C3%A9dies_(Satie,_Erik)" },
+  { composer:"Erik Satie", title:"Gymnopédie No. 3", sub:"From Trois Gymnopédies", diff:"Early Intermediate", era:"Modern", key:"C major", bpm:76, tags:["Character piece","Slow"], url:"https://imslp.org/wiki/3_Gymnop%C3%A9dies_(Satie,_Erik)" },
+  { composer:"Ludwig van Beethoven", title:"Für Elise", sub:"WoO 59 — Bagatelle", diff:"Early Intermediate", era:"Classical", key:"A minor", bpm:76, tags:["Bagatelle"], url:"https://imslp.org/wiki/F%C3%BCr_Elise,_WoO_59_(Beethoven,_Ludwig_van)" },
+  { composer:"Ludwig van Beethoven", title:"Moonlight Sonata — 1st mvt", sub:"Op. 27, No. 2", diff:"Late Intermediate", era:"Classical", key:"C# minor", bpm:54, tags:["Sonata","Nocturne-like"], url:"https://imslp.org/wiki/Piano_Sonata_No.14,_Op.27_No.2_(Beethoven,_Ludwig_van)" },
+  { composer:"Ludwig van Beethoven", title:"Piano Sonata No. 8", sub:"Op. 13 — Pathétique, 2nd mvt", diff:"Late Intermediate", era:"Classical", key:"Ab major", bpm:60, tags:["Sonata","Lyrical"], url:"https://imslp.org/wiki/Piano_Sonata_No.8,_Op.13_(Beethoven,_Ludwig_van)" },
+  { composer:"Ludwig van Beethoven", title:"Bagatelle in A minor", sub:"WoO 59 — Für Elise variant", diff:"Late Intermediate", era:"Classical", key:"A minor", bpm:66, tags:["Bagatelle"], url:"https://imslp.org/wiki/6_Bagatelles,_Op.126_(Beethoven,_Ludwig_van)" },
+  { composer:"Franz Schubert", title:"Moment Musical No. 3", sub:"Op. 94, D. 780", diff:"Late Intermediate", era:"Romantic", key:"F minor", bpm:80, tags:["Character piece"], url:"https://imslp.org/wiki/6_Moments_musicaux,_Op.94_(Schubert,_Franz)" },
+  { composer:"Franz Schubert", title:"Impromptu in Gb Major", sub:"Op. 90, D. 899, No. 3", diff:"Advanced", era:"Romantic", key:"Db major", bpm:66, tags:["Impromptu"], url:"https://imslp.org/wiki/4_Impromptus,_Op.90_(Schubert,_Franz)" },
+  { composer:"Franz Schubert", title:"Impromptu in Ab Major", sub:"Op. 90, D. 899, No. 4", diff:"Advanced", era:"Romantic", key:"Ab major", bpm:56, tags:["Impromptu"], url:"https://imslp.org/wiki/4_Impromptus,_Op.90_(Schubert,_Franz)" },
+  { composer:"Robert Schumann", title:"Träumerei", sub:"Kinderszenen, Op. 15, No. 7", diff:"Early Intermediate", era:"Romantic", key:"F major", bpm:58, tags:["Character piece"], url:"https://imslp.org/wiki/Kinderszenen,_Op.15_(Schumann,_Robert)" },
+  { composer:"Robert Schumann", title:"Arabesque", sub:"Op. 18", diff:"Late Intermediate", era:"Romantic", key:"C major", bpm:60, tags:["Character piece","Lyrical"], url:"https://imslp.org/wiki/Arabesque,_Op.18_(Schumann,_Robert)" },
+  { composer:"Frédéric Chopin", title:"Waltz in A minor", sub:"Op. posth. B. 150", diff:"Early Intermediate", era:"Romantic", key:"A minor", bpm:144, tags:["Waltz"], url:"https://imslp.org/wiki/Waltz_in_A_minor,_B.150_(Chopin,_Fr%C3%A9d%C3%A9ric)" },
+  { composer:"Frédéric Chopin", title:"Prelude in A Major", sub:"Op. 28, No. 7", diff:"Early Intermediate", era:"Romantic", key:"A major", bpm:60, tags:["Prelude"], url:"https://imslp.org/wiki/Preludes,_Op.28_(Chopin,_Fr%C3%A9d%C3%A9ric)" },
+  { composer:"Frédéric Chopin", title:"Prelude in E minor", sub:"Op. 28, No. 4", diff:"Early Intermediate", era:"Romantic", key:"E minor", bpm:52, tags:["Prelude","Lyrical"], url:"https://imslp.org/wiki/Preludes,_Op.28_(Chopin,_Fr%C3%A9d%C3%A9ric)" },
+  { composer:"Frédéric Chopin", title:"Nocturne in Eb Major", sub:"Op. 9, No. 2", diff:"Late Intermediate", era:"Romantic", key:"Eb major", bpm:54, tags:["Nocturne","Lyrical"], url:"https://imslp.org/wiki/Nocturnes,_Op.9_(Chopin,_Fr%C3%A9d%C3%A9ric)" },
+  { composer:"Frédéric Chopin", title:"Waltz in Db Major", sub:"Op. 64, No. 1 — Minute Waltz", diff:"Late Intermediate", era:"Romantic", key:"Db major", bpm:176, tags:["Waltz"], url:"https://imslp.org/wiki/Waltzes,_Op.64_(Chopin,_Fr%C3%A9d%C3%A9ric)" },
+  { composer:"Frédéric Chopin", title:"Étude in E Major", sub:"Op. 10, No. 3 — Tristesse", diff:"Advanced", era:"Romantic", key:"E major", bpm:60, tags:["Étude","Lyrical"], url:"https://imslp.org/wiki/%C3%89tudes,_Op.10_(Chopin,_Fr%C3%A9d%C3%A9ric)" },
+  { composer:"Frédéric Chopin", title:"Ballade No. 1", sub:"Op. 23 — in G minor", diff:"Virtuoso", era:"Romantic", key:"G minor", bpm:66, tags:["Ballade","Dramatic"], url:"https://imslp.org/wiki/Ballade_No.1_in_G_minor,_Op.23_(Chopin,_Fr%C3%A9d%C3%A9ric)" },
+  { composer:"Johannes Brahms", title:"Intermezzo in A Major", sub:"Op. 118, No. 2", diff:"Advanced", era:"Romantic", key:"A major", bpm:60, tags:["Intermezzo","Lyrical"], url:"https://imslp.org/wiki/6_Pieces_for_Piano,_Op.118_(Brahms,_Johannes)" },
+  { composer:"Franz Liszt", title:"Liebestraum No. 3", sub:"S. 541/3 — in Ab Major", diff:"Advanced", era:"Romantic", key:"Ab major", bpm:58, tags:["Nocturne","Lyrical"], url:"https://imslp.org/wiki/3_Liebestr%C3%A4ume,_S.541_(Liszt,_Franz)" },
+  { composer:"Sergei Rachmaninoff", title:"Prelude in C# minor", sub:"Op. 3, No. 2", diff:"Virtuoso", era:"Romantic", key:"C# minor", bpm:60, tags:["Prelude","Dramatic"], url:"https://imslp.org/wiki/Morceaux_de_fantaisie,_Op.3_(Rachmaninoff,_Sergei)" },
+  { composer:"Erik Satie", title:"Gymnopédie No. 1", sub:"From Trois Gymnopédies", diff:"Early Intermediate", era:"Modern", key:"D major", bpm:76, tags:["Character piece","Slow"], url:"https://imslp.org/wiki/3_Gymnop%C3%A9dies_(Satie,_Erik)" },
+  { composer:"Erik Satie", title:"Gnossienne No. 1", sub:"From Trois Gnossiennes", diff:"Early Intermediate", era:"Modern", key:"D minor", bpm:66, tags:["Character piece","Mysterious"], url:"https://imslp.org/wiki/3_Gnossiennes_(Satie,_Erik)" },
+  { composer:"Claude Debussy", title:"Arabesque No. 1", sub:"Deux Arabesques, L. 66", diff:"Late Intermediate", era:"Modern", key:"E major", bpm:120, tags:["Arabesque","Impressionist"], url:"https://imslp.org/wiki/2_Arabesques_(Debussy,_Claude)" },
+  { composer:"Claude Debussy", title:"Clair de lune", sub:"Suite bergamasque, No. 3", diff:"Advanced", era:"Modern", key:"Db major", bpm:54, tags:["Suite","Impressionist"], url:"https://imslp.org/wiki/Suite_bergamasque_(Debussy,_Claude)" },
+  { composer:"Claude Debussy", title:"La fille aux cheveux de lin", sub:"Préludes, Book I, No. 8", diff:"Late Intermediate", era:"Modern", key:"Gb major", bpm:66, tags:["Prelude","Impressionist"], url:"https://imslp.org/wiki/Pr%C3%A9ludes,_Book_1_(Debussy,_Claude)" },
+];
+
+// ============================================================
+// JSON EXERCISE FORMAT — duration codes and converter
+// ============================================================
+const DUR_DIVS  = { w:48, h:24, q:12, e:6, s:3, dh:36, dq:18, de:9, tq:8, te:4 };
+const DUR_TYPE  = { w:'whole', h:'half', q:'quarter', e:'eighth', s:'16th', dh:'half', dq:'quarter', de:'eighth', tq:'quarter', te:'eighth' };
+const DUR_DOT   = new Set(['dh','dq','de']);
+const DUR_TRIP  = new Set(['tq','te']);
+
+function isDiatonicToKey(pitch, keyFifths) {
+  if (!pitch || pitch === 'rest') return true;
+  const m = pitch.match(/^([A-G])(#|b)?(\d)$/);
+  if (!m) return true;
+  const step = m[1], acc = m[2];
+  const sharpOrder = ['F','C','G','D','A','E','B'];
+  const flatOrder  = ['B','E','A','D','G','C','F'];
+  const sharped = new Set(keyFifths > 0 ? sharpOrder.slice(0, keyFifths) : []);
+  const flatted = new Set(keyFifths < 0 ? flatOrder.slice(0, -keyFifths) : []);
+  if (acc === '#') return sharped.has(step);
+  if (acc === 'b') return flatted.has(step);
+  return !sharped.has(step) && !flatted.has(step);
+}
+
+function validateExerciseJSON(data, bars, hand, timeStr, diff) {
+  if (!data || !Array.isArray(data.measures)) return 'Missing measures array';
+  if (data.measures.length < parseInt(bars))
+    return `Only ${data.measures.length} of ${bars} measures generated`;
+
+  const [b, bt] = (timeStr || data.time || '4/4').split('/').map(Number);
+  const needed = Math.round(12 * b * (4 / bt));
+  const keyFifths = data.keyFifths ?? 0;
+  const enforceDiatonic = diff != null && diff <= 4;
+
+  for (let i = 0; i < data.measures.length; i++) {
+    const m = data.measures[i];
+    const n = i + 1;
+    if (hand !== 'left') {
+      if (!Array.isArray(m.rh)) return `Measure ${n} missing rh`;
+      const tot = m.rh.reduce((s, note) => s + (DUR_DIVS[note[1]] || 0), 0);
+      if (Math.abs(tot - needed) > 1) return `Measure ${n} RH sums to ${tot}, needs ${needed}`;
+      if (enforceDiatonic) {
+        for (const note of m.rh) {
+          const pitches = Array.isArray(note[0]) ? note[0] : [note[0]];
+          for (const p of pitches)
+            if (!isDiatonicToKey(p, keyFifths)) return `Measure ${n} RH: "${p}" is not diatonic to the key`;
+        }
+      }
+    }
+    if (hand !== 'right') {
+      if (!Array.isArray(m.lh)) return `Measure ${n} missing lh`;
+      const tot = m.lh.reduce((s, note) => s + (DUR_DIVS[note[1]] || 0), 0);
+      if (Math.abs(tot - needed) > 1) return `Measure ${n} LH sums to ${tot}, needs ${needed}`;
+      if (enforceDiatonic) {
+        for (const note of m.lh) {
+          const pitches = Array.isArray(note[0]) ? note[0] : [note[0]];
+          for (const p of pitches)
+            if (!isDiatonicToKey(p, keyFifths)) return `Measure ${n} LH: "${p}" is not diatonic to the key`;
+        }
+      }
+    }
+  }
+  return null;
+}
+
+function exerciseToMusicXml(data, diff, hand) {
+  const [beats, beatType] = (data.time || '4/4').split('/');
+  const keyFifths = data.keyFifths ?? 0;
+  const mode = (data.key || '').toLowerCase().includes('minor') ? 'minor' : 'major';
+  const tempo = data.tempo || 80;
+
+  function parsePitch(p) {
+    if (!p || p === 'rest') return null;
+    const m = p.match(/^([A-G])(#|b)?([2-7])$/);
+    if (!m) return null;
+    return { step: m[1], alter: m[2] === '#' ? 1 : m[2] === 'b' ? -1 : null, octave: m[3] };
+  }
+
+  function singleNoteXml(pitch, dur, staff, voice, isChord, tripStart, tripStop) {
+    const divs = DUR_DIVS[dur] || 12;
+    const type = DUR_TYPE[dur] || 'quarter';
+    const parsed = parsePitch(pitch);
+    let x = '<note>';
+    if (isChord) x += '<chord/>';
+    if (!parsed) {
+      x += '<rest/>';
+    } else {
+      x += '<pitch>';
+      x += `<step>${parsed.step}</step>`;
+      if (parsed.alter !== null) x += `<alter>${parsed.alter}</alter>`;
+      x += `<octave>${parsed.octave}</octave>`;
+      x += '</pitch>';
+    }
+    x += `<duration>${divs}</duration><voice>${voice}</voice><type>${type}</type>`;
+    if (DUR_DOT.has(dur)) x += '<dot/>';
+    if (DUR_TRIP.has(dur)) x += '<time-modification><actual-notes>3</actual-notes><normal-notes>2</normal-notes></time-modification>';
+    x += `<staff>${staff}</staff>`;
+    if (tripStart || tripStop) {
+      x += '<notations>';
+      if (tripStart) x += '<tuplet type="start" bracket="yes"/>';
+      if (tripStop)  x += '<tuplet type="stop"/>';
+      x += '</notations>';
+    }
+    x += '</note>';
+    return x;
+  }
+
+  function handToXml(notes, staff, voice) {
+    // Mark triplet group boundaries
+    const mark = new Array(notes.length).fill(null);
+    let i = 0;
+    while (i < notes.length) {
+      if (DUR_TRIP.has(notes[i][1])) {
+        let j = i;
+        while (j < notes.length && DUR_TRIP.has(notes[j][1])) j++;
+        mark[i] = 'start'; mark[j - 1] = mark[j - 1] === 'start' ? 'both' : 'stop';
+        i = j;
+      } else { i++; }
+    }
+    let xml = '';
+    for (let i = 0; i < notes.length; i++) {
+      const [pitchOrArr, dur] = notes[i];
+      const pitches = Array.isArray(pitchOrArr) ? pitchOrArr : [pitchOrArr];
+      const ts = mark[i] === 'start' || mark[i] === 'both';
+      const te = mark[i] === 'stop'  || mark[i] === 'both';
+      for (let j = 0; j < pitches.length; j++) {
+        xml += singleNoteXml(pitches[j], dur, staff, voice, j > 0, j === 0 && ts, j === 0 && te);
+      }
+    }
+    return xml;
+  }
+
+  let parts = '';
+  for (let i = 0; i < data.measures.length; i++) {
+    const m = data.measures[i];
+    let mx = `<measure number="${i + 1}">`;
+
+    if (i === 0) {
+      mx += `<attributes><divisions>12</divisions>`;
+      mx += `<key><fifths>${keyFifths}</fifths><mode>${mode}</mode></key>`;
+      mx += `<time><beats>${beats}</beats><beat-type>${beatType}</beat-type></time>`;
+      if (hand === 'both') {
+        mx += `<staves>2</staves>`;
+        mx += `<clef number="1"><sign>G</sign><line>2</line></clef>`;
+        mx += `<clef number="2"><sign>F</sign><line>4</line></clef>`;
+      } else {
+        mx += `<clef><sign>${hand === 'left' ? 'F' : 'G'}</sign><line>${hand === 'left' ? '4' : '2'}</line></clef>`;
+      }
+      mx += `</attributes>`;
+      mx += `<direction placement="above"><direction-type><metronome><beat-unit>quarter</beat-unit><per-minute>${tempo}</per-minute></metronome></direction-type></direction>`;
+    }
+
+    if (hand === 'both') {
+      const rhNotes = m.rh || [];
+      mx += handToXml(rhNotes, 1, 1);
+      const rhDivs = rhNotes.reduce((s, n) => s + (DUR_DIVS[n[1]] || 0), 0);
+      mx += `<backup><duration>${rhDivs}</duration></backup>`;
+      mx += handToXml(m.lh || [], 2, 2);
+    } else if (hand === 'right') {
+      mx += handToXml(m.rh || [], 1, 1);
+    } else {
+      mx += handToXml(m.lh || [], 1, 1);
+    }
+
+    mx += '</measure>';
+    parts += mx;
+  }
+
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<score-partwise version="3.1">
+<movement-title>Sight Reading Exercise — Difficulty ${diff}/10</movement-title>
+<part-list><score-part id="P1"><part-name>Piano</part-name></score-part></part-list>
+<part id="P1">${parts}</part>
+</score-partwise>`;
+}
+
+// ============================================================
+// STATE
+// ============================================================
+let state = {
+  mode: 'library',
+  lib: {
+    current: null,
+    filtered: [],
+    seen: new Set(),
+    played: 0, skipped: 0, streak: 0,
+    history: []
+  },
+  gen: {
+    current: null,
+    played: 0, skipped: 0, streak: 0,
+    history: [],
+    lastParams: null
+  },
+  metro: {
+    lib: { bpm: 80, running: false, subdivision: 'quarter', tapTimes: [], intervalId: null, beatState: false },
+    gen: { bpm: 80, running: false, subdivision: 'quarter', tapTimes: [], intervalId: null, beatState: false }
+  }
+};
+
+let osmd = null;
+let audioCtx = null;
+
+// ============================================================
+// INIT
+// ============================================================
+function init() {
+  loadFromStorage();
+  setMode(state.mode);
+  applyLibraryFilters(false);
+  loadLibraryPiece();
+  updateKeyStatus();
+  // Pre-generate first exercise in background
+  setTimeout(triggerPreGen, 1000);
+}
+
+function loadFromStorage() {
+  try {
+    const saved = localStorage.getItem('sightReading_v2');
+    if (saved) {
+      const data = JSON.parse(saved);
+      if (data.mode) state.mode = data.mode;
+      if (data.filters) {
+        const f = data.filters;
+        if (f.libDifficulty) document.getElementById('lib-difficulty').value = f.libDifficulty;
+        if (f.libEra) document.getElementById('lib-era').value = f.libEra;
+        if (f.libKey) document.getElementById('lib-key').value = f.libKey;
+        if (f.genDiff) { document.getElementById('gen-diff-slider').value = f.genDiff; document.getElementById('gen-diff-val').textContent = f.genDiff; }
+        if (f.genKey) document.getElementById('gen-key').value = f.genKey;
+        if (f.genTime) document.getElementById('gen-time').value = f.genTime;
+        if (f.genBars) document.getElementById('gen-bars').value = f.genBars;
+        if (f.genStyle) document.getElementById('gen-style').value = f.genStyle;
+        if (f.genHand) document.getElementById('gen-hand').value = f.genHand;
+        if (f.challenges) {
+          document.querySelectorAll('.challenge-tag').forEach(el => {
+            el.classList.toggle('selected', f.challenges.includes(el.dataset.val));
+          });
+        }
+      }
+      if (data.lib) { state.lib.played = data.lib.played||0; state.lib.skipped = data.lib.skipped||0; state.lib.streak = data.lib.streak||0; state.lib.history = data.lib.history||[]; }
+      if (data.gen) { state.gen.played = data.gen.played||0; state.gen.skipped = data.gen.skipped||0; state.gen.streak = data.gen.streak||0; state.gen.history = data.gen.history||[]; }
+    }
+  } catch(e) {}
+  updateLibStats();
+  updateGenStats();
+  renderHistory('lib');
+  renderHistory('gen');
+}
+
+function saveToStorage() {
+  try {
+    const challenges = [...document.querySelectorAll('.challenge-tag.selected')].map(el => el.dataset.val);
+    localStorage.setItem('sightReading_v2', JSON.stringify({
+      mode: state.mode,
+      filters: {
+        libDifficulty: document.getElementById('lib-difficulty')?.value,
+        libEra: document.getElementById('lib-era')?.value,
+        libKey: document.getElementById('lib-key')?.value,
+        genDiff: document.getElementById('gen-diff-slider')?.value,
+        genKey: document.getElementById('gen-key')?.value,
+        genTime: document.getElementById('gen-time')?.value,
+        genBars: document.getElementById('gen-bars')?.value,
+        genStyle: document.getElementById('gen-style')?.value,
+        genHand: document.getElementById('gen-hand')?.value,
+        challenges
+      },
+      lib: { played: state.lib.played, skipped: state.lib.skipped, streak: state.lib.streak, history: state.lib.history.slice(-50) },
+      gen: { played: state.gen.played, skipped: state.gen.skipped, streak: state.gen.streak, history: state.gen.history.slice(-50) }
+    }));
+  } catch(e) {}
+}
+
+function checkApiKey() {
+  // The deployed app uses a server proxy by default — no API key needed.
+  // The banner only auto-shows when running locally (file://) without a BYOK key,
+  // or when the proxy reports the demo limit has been hit (handled separately).
+  const key = localStorage.getItem('anthropic_api_key');
+  const banner = document.getElementById('api-banner');
+  if (!banner) return;
+  const isLocalFile = window.location.protocol === 'file:';
+  if (state.mode === 'generated' && isLocalFile && !key) {
+    banner.classList.add('visible');
+  } else {
+    banner.classList.remove('visible');
+  }
+  if (key) {
+    const input = document.getElementById('api-key-input');
+    if (input) input.value = key;
+  }
+}
+
+function saveApiKey() {
+  const val = document.getElementById('api-key-input').value.trim();
+  if (val) {
+    localStorage.setItem('anthropic_api_key', val);
+    document.getElementById('api-banner')?.classList.remove('visible');
+    updateKeyStatus();
+  }
+}
+
+// ============================================================
+// MODE SWITCHING
+// ============================================================
+function setMode(mode) {
+  state.mode = mode;
+  document.querySelectorAll('.mode-btn').forEach((b,i) => b.classList.toggle('active', (i===0 && mode==='library') || (i===1 && mode==='generated')));
+  document.getElementById('panel-library').classList.toggle('active', mode === 'library');
+  document.getElementById('panel-generated').classList.toggle('active', mode === 'generated');
+  stopMetronome('lib'); stopMetronome('gen');
+  checkApiKey();
+  saveToStorage();
+}
+
+// ============================================================
+// LIBRARY MODE
+// ============================================================
+function applyLibraryFilters(reload = true) {
+  const diff = document.getElementById('lib-difficulty').value;
+  const era = document.getElementById('lib-era').value;
+  const key = document.getElementById('lib-key').value;
+  state.lib.filtered = PIECES.filter(p =>
+    (diff === 'all' || p.diff === diff) &&
+    (era === 'all' || p.era === era) &&
+    (key === 'all' || p.key === key)
+  );
+  state.lib.seen = new Set();
+  saveToStorage();
+  if (reload) loadLibraryPiece();
+}
+
+function pickLibraryPiece() {
+  if (state.lib.filtered.length === 0) return null;
+  const currentTitle = state.lib.current ? state.lib.current.title : null;
+  let unseen = state.lib.filtered.filter(p => !state.lib.seen.has(p.title) && p.title !== currentTitle);
+  if (unseen.length === 0) {
+    state.lib.seen = new Set();
+    unseen = state.lib.filtered.filter(p => p.title !== currentTitle);
+  }
+  if (unseen.length === 0) unseen = state.lib.filtered;
+  const p = unseen[Math.floor(Math.random() * unseen.length)];
+  state.lib.seen.add(p.title);
+  return p;
+}
+
+function loadLibraryPiece() {
+  const p = pickLibraryPiece();
+  if (!p) {
+    document.getElementById('lib-title').textContent = 'No pieces match your filters';
+    document.getElementById('lib-composer').textContent = '';
+    document.getElementById('lib-sub').textContent = 'Try adjusting the filters above';
+    document.getElementById('lib-era-display').textContent = '';
+    document.getElementById('lib-meta').innerHTML = '';
+    document.getElementById('lib-link-text').textContent = 'Open on IMSLP';
+    return;
+  }
+  // Warn if pool is very small
+  const poolSize = state.lib.filtered.length;
+  const poolWarning = document.getElementById('lib-pool-warning');
+  if (poolWarning) {
+    if (poolSize === 1) {
+      poolWarning.textContent = 'Only 1 piece matches these filters — try broadening your selection for variety.';
+      poolWarning.style.display = 'block';
+    } else if (poolSize <= 3) {
+      poolWarning.textContent = `Only ${poolSize} pieces match these filters.`;
+      poolWarning.style.display = 'block';
+    } else {
+      poolWarning.style.display = 'none';
+    }
+  }
+  state.lib.current = p;
+  document.getElementById('lib-era-display').textContent = p.era;
+  document.getElementById('lib-composer').textContent = p.composer;
+  document.getElementById('lib-title').textContent = p.title;
+  document.getElementById('lib-sub').textContent = p.sub;
+  // URL stored in state.lib.current.url for fallback
+
+  const meta = document.getElementById('lib-meta');
+  meta.innerHTML = `
+    <span class="meta-tag diff" style="${p.diff === 'Beginner' ? 'border-color:var(--green);color:var(--green);background:var(--green-dim)' : ''}">${p.diff}</span>
+    <span class="meta-tag key">♩ ${p.key}</span>
+    <span class="meta-tag tempo">♩ = ${p.bpm} suggested</span>
+    ${p.tags.map(t => `<span class="meta-tag">${t}</span>`).join('')}
+  `;
+
+  // Update metronome BPM but don't auto-start
+  setMetronomeBpm('lib', p.bpm);
+}
+
+function libraryNext() {
+  if (state.lib.current) {
+    addToHistory('lib', state.lib.current.title, state.lib.current.composer, 'played');
+    state.lib.played++;
+    state.lib.streak++;
+    updateLibStats();
+    saveToStorage();
+  }
+  loadLibraryPiece();
+}
+
+function librarySkip() {
+  if (state.lib.current) {
+    addToHistory('lib', state.lib.current.title, state.lib.current.composer, 'skipped');
+    state.lib.skipped++;
+    state.lib.streak = 0;
+    updateLibStats();
+    saveToStorage();
+  }
+  loadLibraryPiece();
+}
+
+function libraryFeedback(type) {
+  const diffs = ['Beginner','Early Intermediate','Late Intermediate','Advanced','Virtuoso'];
+  const sel = document.getElementById('lib-difficulty');
+  const cur = sel.value;
+  const idx = diffs.indexOf(cur);
+  if (type === 'easy') {
+    if (idx >= 0 && idx < diffs.length - 1) sel.value = diffs[idx+1];
+    else if (cur === 'all') sel.value = 'Late Intermediate';
+  } else {
+    if (idx > 0) sel.value = diffs[idx-1];
+    else if (cur === 'all') sel.value = 'Early Intermediate';
+  }
+  applyLibraryFilters(true);
+}
+
+async function openOnIMSLP() {
+  const p = state.lib.current;
+  if (!p) return;
+
+  const btn = document.getElementById('lib-link');
+  const btnText = document.getElementById('lib-link-text');
+  btn.disabled = true;
+  btnText.textContent = 'Looking up...';
+
+  try {
+    // Build search query: title + composer lastname
+    const composerLastName = p.composer.split(' ').pop();
+    const query = `${p.title} ${composerLastName}`;
+    const apiUrl = `https://imslp.org/api.php?action=query&list=search&srwhat=title&srsearch=${encodeURIComponent(query)}&srlimit=5&format=json&origin=*`;
+
+    const response = await fetch(apiUrl);
+    if (!response.ok) throw new Error('API request failed');
+
+    const data = await response.json();
+    const results = data?.query?.search;
+
+    if (results && results.length > 0) {
+      // Find best match — prefer result containing composer last name
+      const best = results.find(r => r.title.toLowerCase().includes(composerLastName.toLowerCase())) || results[0];
+      const url = `https://imslp.org/wiki/${encodeURIComponent(best.title).replace(/%20/g, '_')}`;
+      window.open(url, '_blank');
+    } else {
+      // No results — fall back to hardcoded URL
+      window.open(p.url, '_blank');
+    }
+  } catch(err) {
+    // API failed — fall back to hardcoded URL
+    window.open(p.url, '_blank');
+  }
+
+  btn.disabled = false;
+  btnText.textContent = 'Open on IMSLP';
+}
+
+function resetQueue() {
+  // Clear seen set so all pieces in current filter become eligible again
+  state.lib.seen = new Set();
+  loadLibraryPiece();
+}
+
+function resetSession() {
+  // Reset everything — seen set, stats, history, streak
+  state.lib.seen = new Set();
+  state.lib.played = 0;
+  state.lib.skipped = 0;
+  state.lib.streak = 0;
+  state.lib.history = [];
+  updateLibStats();
+  renderHistory('lib');
+  saveToStorage();
+  loadLibraryPiece();
+}
+
+function updateLibStats() {
+  document.getElementById('lib-stat-played').textContent = state.lib.played;
+  document.getElementById('lib-stat-skipped').textContent = state.lib.skipped;
+  document.getElementById('lib-stat-streak').textContent = state.lib.streak;
+}
+
+// ============================================================
+// GENERATED MODE
+// ============================================================
+function updateHandTargetUI() {
+  const hand = document.getElementById('gen-hand').value;
+  document.querySelectorAll('.challenge-tag[data-requires-both]').forEach(el => {
+    el.classList.toggle('disabled', hand !== 'both');
+    if (hand !== 'both') el.classList.remove('selected');
+  });
+}
+
+function toggleChallenge(el) {
+  if (el.classList.contains('disabled')) return;
+  el.classList.toggle('selected');
+  saveToStorage();
+  triggerPreGen();
+}
+
+let preGenCache = null; // { xml, bpm, paramsKey }
+
+// API routing — uses the Vercel proxy when deployed, direct API only when running
+// from a local file with a user-supplied API key.
+function callAnthropic(body) {
+  const byokKey = localStorage.getItem('anthropic_api_key') || '';
+  const isLocalFile = window.location.protocol === 'file:';
+
+  if (isLocalFile) {
+    // Local dev: must have BYOK key, hit Anthropic directly.
+    if (!byokKey) {
+      throw new Error('Local dev requires an API key — enter one in the settings.');
+    }
+    return fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': byokKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-beta': 'prompt-caching-2024-07-31',
+        'anthropic-dangerous-direct-browser-access': 'true',
+      },
+      body,
+    });
+  }
+
+  // Deployed: hit our proxy. Forward BYOK key as a header if user has set one.
+  const headers = { 'Content-Type': 'application/json' };
+  if (byokKey) headers['x-byok-key'] = byokKey;
+  return fetch('/api/generate', { method: 'POST', headers, body });
+}
+
+async function handleProxyError(response) {
+  // Returns a thrown error if the proxy returned a structured failure (demo limit, etc.)
+  if (response.ok) return;
+  let body = null;
+  try { body = await response.clone().json(); } catch (e) {}
+  if (response.status === 429 && body?.error === 'demo_limit') {
+    showDemoLimitBanner(body.message);
+    throw new Error(body.message || 'Demo limit reached');
+  }
+  if (body?.message) throw new Error(body.message);
+  throw new Error(`API error: ${response.status}`);
+}
+
+function updateKeyStatus() {
+  const el = document.getElementById('key-status');
+  const text = document.getElementById('key-status-text');
+  const action = document.getElementById('key-status-action');
+  if (!el || !text || !action) return;
+  const hasKey = !!localStorage.getItem('anthropic_api_key');
+  if (hasKey) {
+    el.classList.add('byok');
+    text.textContent = 'Using your API key';
+    action.textContent = 'Switch to demo';
+    action.onclick = () => {
+      localStorage.removeItem('anthropic_api_key');
+      const input = document.getElementById('api-key-input');
+      if (input) input.value = '';
+      updateKeyStatus();
+    };
+  } else {
+    el.classList.remove('byok');
+    text.textContent = 'Demo mode (10/day)';
+    action.textContent = 'Use your own key';
+    action.onclick = () => {
+      document.getElementById('api-banner')?.classList.add('visible');
+      document.getElementById('api-key-input')?.focus();
+    };
+  }
+}
+
+function showDemoLimitBanner(message) {
+  const banner = document.getElementById('api-banner');
+  if (!banner) return;
+  const titleEl = banner.querySelector('.api-banner-title');
+  const pEl = banner.querySelector('p');
+  if (titleEl) titleEl.textContent = 'Daily demo limit reached';
+  if (pEl) pEl.textContent = message || 'To continue using the app today, enter your own Anthropic API key. It stays in your browser only and is never sent anywhere except directly to Anthropic.';
+  banner.classList.add('visible');
+}
+
+async function fetchExercise(diff, key, time, bars, style, hand, challenges, apiKey) {
+  const actualKey = key === 'random' ? '' : key;
+  const actualTime = time === 'random' ? '' : time;
+  const actualStyle = style === 'random' ? '' : style;
+
+  const keyFifthsMap = {
+    'C major':0,'G major':1,'D major':2,'A major':3,'E major':4,'B major':5,'F# major':6,
+    'F major':-1,'Bb major':-2,'Eb major':-3,'Ab major':-4,'Db major':-5,
+    'A minor':0,'E minor':1,'B minor':2,'F# minor':3,'C# minor':4,'G# minor':5,
+    'D minor':-1,'G minor':-2,'C minor':-3,'F minor':-4,'Bb minor':-5,'Eb minor':-6
+  };
+  const resolvedKey = actualKey || null;
+  const keyFifths = resolvedKey ? (keyFifthsMap[resolvedKey] ?? 0) : 0;
+
+  const diffDesc = [
+    '',
+    `Level 1/10 — Absolute beginner. 5-finger position of the selected key only. Whole/half/quarter notes only. Stepwise motion only — no skips. NO chords. Hands NEVER simultaneous — when rh has a note, lh MUST have "rest" for that exact duration, and vice versa. Vary note values and phrase shapes. Phrases end on tonic. Tempo 50–60.`,
+    `Level 2/10 — Bridge level. 5-finger position, slightly extended range. Same key as level 1. Whole/half/quarter/dotted-half notes. Mostly stepwise; an occasional 3rd is ok. NO chords. RULE: one hand plays a moving melody while the other either holds a single sustained note (half or whole) OR rests — never both moving at once. EITHER hand can carry the melody — vary this freely across the exercise. Sometimes lh plays the melody while rh holds a sustained note; sometimes rh plays while lh holds; sometimes one plays while the other rests entirely. Mix all these patterns. Phrases end on tonic. Tempo 56–69.`,
+    `Level 3/10 — RCM Prep B. Keys 0–1 sharps/flats. Whole/half/quarter/dotted-half; eighth notes introduced simply. Mostly stepwise; thirds ok. Light two-hand coordination: RH plays melody, LH provides simple single-note support or rests. NO chords in either hand — single notes only. LH notes are mostly long (half/whole). Tempo 60–76.`,
+    `Level 4/10 — ABRSM Gr.1. Keys up to 2 sharps/flats. Quarter/half/whole/eighth notes. RH melody (single notes only). LH may now occasionally play simple DYADS — two-note intervals (a 5th or 3rd) as block intervals, not yet full triads. Most LH notes are still single. No chords in RH. Tempo 66–88.`,
+    `Level 5/10 — ABRSM Gr.2–3. Keys up to 3 sharps/flats. Eighth notes; dotted quarter-eighth; 6/8. LH uses dyads regularly and may introduce simple ROOT-POSITION TRIADS (3 notes) as occasional block chords — not every beat. Alberti bass (broken single notes) also ok in LH. RH remains single notes or simple dyads at phrase peaks. Moderate independence. Tempo 76–108.`,
+    `Level 6/10 — ABRSM Gr.3–4. Keys up to 4 sharps/flats. Dotted rhythms, simple triplets, syncopation. LH uses block triads and broken chord patterns freely. RH may now include DYADS (intervals of a 3rd or 6th) occasionally in the melody. Both hands developing independence. 8–12 bars. Tempo 84–120.`,
+    `Level 7/10 — ABRSM Gr.4–5. Keys up to 5 sharps/flats. Syncopation; compound rhythms. RH melody may include TRIADS as block chords at cadence points. LH uses triads and 7th chords. Double notes (thirds/sixths) in RH melody more common. Strong hand independence. 8–12 bars. Tempo 88–138.`,
+    `Level 8/10 — ABRSM Gr.5–6. All keys; modulations. Polyrhythm; double-dotted rhythms; hemiola. Full chords in both hands. 7th chords and extended harmonies. Octave passages. High hand independence. 12–16 bars.`,
+    `Level 9/10 — ABRSM Gr.6–8. All keys; rapid modulations; virtuosic complexity. Multiple independent voices; dense harmonies; octave passages. Concert-level coordination. 12–16 bars.`,
+    `Level 10/10 — Concert virtuoso. Chopin/Rachmaninoff/Liszt level. All keys; full chromatic complexity. Virtuosic rhythm, coordination, polyphony. Full keyboard range. 16+ bars.`
+  ][diff] || `Difficulty ${diff}/10`;
+
+  const handDesc = hand === 'both'
+    ? `Both hands. Each measure must have both "rh" and "lh" arrays. ${
+        diff === 1 ? 'LEVEL 1: rh and lh must NEVER have notes at the same beat. When rh has a note, lh MUST have "rest" for that exact duration.' :
+        diff === 2 ? 'LEVEL 2: lh may ONLY hold a single sustained note (half or whole) as a pedal point while rh plays — or rest entirely. lh must NOT have moving/changing notes when rh is also moving.' : ''
+      }`
+    : hand === 'right' ? 'Right hand only. Each measure has only "rh" array (no "lh").'
+    : 'Left hand only. Each measure has only "lh" array (no "rh").';
+
+  const keyDesc = resolvedKey
+    ? `Required key: "${resolvedKey}" (keyFifths: ${keyFifths}). All pitches must be diatonic to ${resolvedKey} unless challenge targets specify accidentals. Use the correct pitch names including sharps/flats (e.g. in G major write "F#4" not "F4").`
+    : `Choose a musically appropriate key for level ${diff}/10.`;
+
+  const timeDesc = actualTime || (diff <= 3 ? '4/4' : 'choose appropriate for the level');
+
+  // Random musical seed — different every generation to force variety
+  const seeds = diff === 1 ? [
+    'Begin with the left hand playing a whole note while the right hand rests.',
+    'Open with two half notes descending in the right hand.',
+    'Start with the right hand ascending stepwise using quarter notes across two bars.',
+    'Begin with a full bar of silence in both hands, then the left hand enters.',
+    'Start with the left hand descending from the dominant to the tonic over two bars.',
+    'Open with the right hand holding a half note, then moving stepwise.',
+    'Begin with alternating whole notes — right hand bar 1, left hand bar 2.',
+    'Start with the right hand on the tonic, ascending then descending back.',
+    'Open with the left hand ascending while right hand rests for the first bar.',
+    'Begin with two bars of right hand quarter notes descending from the dominant.',
+  ] : diff === 2 ? [
+    'LH plays the melody this time — LH moves stepwise while RH holds a sustained whole note above.',
+    'LH carries a descending melodic phrase while RH sustains a long note on the tonic.',
+    'RH plays ascending quarter notes while LH holds a whole note below.',
+    'LH plays the melody in bar 1 with RH resting; RH holds a note in bar 2 while LH plays on.',
+    'RH plays a descending phrase while LH holds the dominant as a half note.',
+    'LH takes the melody for the first half; RH holds a sustained note for the second half.',
+    'Both hands alternate melodic roles — RH plays bar 1, LH plays bar 2, RH plays bar 3, LH resolves.',
+    'LH plays a rising stepwise line while RH holds a whole note on the tonic.',
+    'RH plays and LH is silent in bar 1; in bar 2 LH plays the melody while RH holds.',
+    'LH plays the melody throughout; RH holds occasional half notes as a simple accompaniment.',
+  ] : diff <= 5 ? [
+    'Open with a stepwise ascending melody in the right hand.',
+    'Begin with the left hand establishing the tonic with a held note.',
+    'Start with a descending melodic line with rhythmic variety.',
+    'Open with a short motif that repeats and varies.',
+    'Begin with syncopation or an off-beat entry.',
+    'Start with contrasting rhythms between the hands.',
+    'Open with a call in the right hand, answered by the left.',
+    'Begin with the melody starting on the 3rd scale degree.',
+    'Start with a pickup note leading into the first full bar.',
+    'Open with a broken chord pattern in the left hand.',
+  ] : [
+    'Begin with a bold, unexpected harmonic gesture.',
+    'Open with a lyrical, singing melody over rich accompaniment.',
+    'Start with rhythmic complexity — syncopation or cross-rhythm.',
+    'Begin with a dramatic leap in the melody.',
+    'Open with a contrapuntal texture — independent voices.',
+    'Start with a quiet, introspective phrase that builds.',
+    'Begin with an energetic, rhythmically driven opening.',
+    'Open with chromaticism or modal color.',
+    'Start with a sequence that develops across the first phrase.',
+    'Begin with a long note that resolves through stepwise motion.',
+  ];
+  const seed = seeds[Math.floor(Math.random() * seeds.length)];
+
+  const prompt = `Generate a piano sight reading exercise for: ${diffDesc}
+
+${keyDesc}
+Time signature: ${timeDesc}
+Length: ${bars} measures
+Style: ${actualStyle || 'classical'}
+Challenges: ${challenges.length > 0 ? challenges.join(', ') : 'general sight reading'}
+Hand: ${handDesc}
+
+Return ONLY a JSON object (no markdown, no explanation) with this structure:
+{
+  "key": "KEY NAME",
+  "keyFifths": INTEGER,
+  "time": "N/N",
+  "tempo": INTEGER,
+  "measures": [
+    { "rh": [["PITCH","DUR"], ...], "lh": [["PITCH","DUR"], ...] },
+    ...
+  ]
+}
+
+MUSICAL DIRECTION FOR THIS GENERATION: ${seed} Build the rest of the exercise from this starting idea. Every measure should feel fresh — vary note values, phrase shapes, and which hand leads. Do not default to ascending quarter-note scales.
+
+PITCH FORMAT: "C4", "F#5", "Bb3", "rest" (letter + optional #/b + octave 2–7)
+DURATION CODES: "w"=whole(4 beats) "h"=half(2) "q"=quarter(1) "e"=eighth(½) "s"=16th(¼) "dh"=dotted-half(3) "dq"=dotted-quarter(1½) "de"=dotted-eighth(¾) "tq"=triplet-quarter(⅔) "te"=triplet-eighth(⅓)
+CHORDS: replace pitch string with array: [["C3","E3","G3"],"h"]
+
+BEAT ARITHMETIC — MANDATORY: Each array entry occupies time equal to its duration. The rh total AND lh total must each equal exactly the time signature's beats every measure.
+With divisions=12 (used for triplets): whole=48 half=24 quarter=12 eighth=6 dh=36 dq=18 de=9 tq=8 te=4
+4/4 measure = 48 divisions. 3/4 = 36. 6/8 = 48 (six eighths).
+Correct 4/4 examples: q+q+q+q=48✓ h+h=48✓ dq+e+q+q=48✓ w=48✓
+Wrong: q+q+q+e=42✗ h+q+q+e=54✗ (too many!)
+FOR EACH MEASURE: mentally sum the durations before writing. Stop when you reach the limit. Generate all ${bars} measures.`;
+
+  const model = diff <= 2 ? 'claude-haiku-4-5-20251001' : 'claude-sonnet-4-6';
+
+  const response = await callAnthropic(JSON.stringify({
+      model,
+      max_tokens: 4000,
+      temperature: 0.9,
+      stream: true,
+      system: [
+        {
+          type: 'text',
+          text: `You are an expert music composer and piano pedagogue familiar with RCM/ABRSM grading systems, method books (Czerny, Bartók, Alfred's, Bastien), and music theory at all levels.
+
+THE 10-LEVEL SCALE:
+Level 1=Hands separate, stepwise, 5-finger | Level 2=One hand holds while other plays | Level 3=Light two-hand, single notes only | Level 4=LH occasional dyads (2-note intervals) | Level 5=LH dyads+triads, Alberti bass, RH single notes | Level 6=LH triads freely, RH dyads at peaks | Level 7=Both hands triads+7ths | Level 8=Full chords both hands, octaves | Level 9=Virtuosic density | Level 10=Concert virtuoso
+
+MUSIC THEORY — always apply:
+- Phrases end on the tonic, approached stepwise (scale degree 2→1 or 7→1)
+- Use antecedent/consequent pairs: first phrase ends on dominant, second resolves to tonic
+- Melodies have a natural arch; exercises are singable and feel complete
+- Each generation is varied — never repeat the same pattern
+
+You output ONLY valid JSON matching the requested schema. No markdown, no explanation.`,
+          cache_control: { type: 'ephemeral' }
+        }
+      ],
+      messages: [{ role: 'user', content: prompt }]
+    }));
+
+  await handleProxyError(response);
+
+  // Stream response — wait for [DONE] since JSON has no early-exit marker
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let sseBuffer = '';
+  let fullText = '';
+
+  outer: while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    sseBuffer += decoder.decode(value, { stream: true });
+    let boundary;
+    while ((boundary = sseBuffer.indexOf('\n\n')) !== -1) {
+      const event = sseBuffer.slice(0, boundary);
+      sseBuffer = sseBuffer.slice(boundary + 2);
+      for (const line of event.split('\n')) {
+        if (!line.startsWith('data: ')) continue;
+        const data = line.slice(6).trim();
+        if (data === '[DONE]') break outer;
+        try {
+          const parsed = JSON.parse(data);
+          if (parsed.type === 'content_block_delta' && parsed.delta?.type === 'text_delta')
+            fullText += parsed.delta.text;
+        } catch(e) {}
+      }
+    }
+  }
+  reader.cancel().catch(() => {});
+
+  // Parse JSON — strip markdown fences if present
+  let jsonText = fullText.trim().replace(/^```[\w]*\n?/, '').replace(/\n?```$/, '').trim();
+  const jsonStart = jsonText.indexOf('{');
+  const jsonEnd = jsonText.lastIndexOf('}');
+  if (jsonStart < 0 || jsonEnd < 0) throw new Error('No JSON found in response — please try again');
+  jsonText = jsonText.slice(jsonStart, jsonEnd + 1);
+
+  let data;
+  try { data = JSON.parse(jsonText); }
+  catch(e) { throw new Error('Invalid JSON response — please try again'); }
+
+  // Validate beat arithmetic — the key quality gate
+  const jsonError = validateExerciseJSON(data, bars, hand, actualTime, diff);
+  if (jsonError) {
+    // Self-correction: send back to Haiku with the specific error
+    try {
+      data = await selfCorrectJson(data, jsonError, bars, hand, actualTime, apiKey);
+      const retry = validateExerciseJSON(data, bars, hand, actualTime, diff);
+      if (retry) throw new Error(retry);
+    } catch(e) {
+      throw new Error(jsonError);
+    }
+  }
+
+  // Convert validated JSON to MusicXML deterministically
+  const xml = exerciseToMusicXml(data, diff, hand);
+
+  return { xml, bpm: data.tempo || 80, actualKey: data.key || actualKey, actualStyle };
+}
+
+async function selfCorrectJson(data, error, bars, hand, timeStr, apiKey) {
+  const response = await callAnthropic(JSON.stringify({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 4000,
+      messages: [{
+        role: 'user',
+        content: `This music exercise JSON has a beat-count error: "${error}"
+
+Fix ONLY the incorrect measure(s) so every rh and lh array sums to the correct number of beats for the time signature. Do not change notes that are correct. Return ONLY the corrected JSON object.
+
+Duration codes: "w"=4 "h"=2 "q"=1 "e"=½ "s"=¼ "dh"=3 "dq"=1½ "de"=¾ "tq"=⅔ "te"=⅓
+
+${JSON.stringify(data, null, 2)}`
+      }]
+    }));
+  await handleProxyError(response);
+  const resp = await response.json();
+  let text = resp.content[0].text.trim().replace(/^```[\w]*\n?/, '').replace(/\n?```$/, '').trim();
+  const s = text.indexOf('{'), e2 = text.lastIndexOf('}');
+  if (s < 0 || e2 < 0) throw new Error('No JSON in correction');
+  return JSON.parse(text.slice(s, e2 + 1));
+}
+
+async function preGenerateNext(diff, key, time, bars, style, hand, challenges, apiKey) {
+  try {
+    const paramsKey = JSON.stringify({ diff, key, time, bars, style, hand, challenges: [...challenges].sort() });
+    const result = await fetchExercise(diff, key, time, bars, style, hand, challenges, apiKey);
+    preGenCache = { ...result, paramsKey };
+  } catch(e) {
+    preGenCache = null;
+  }
+}
+
+async function generateExercise(diffOffset = 0) {
+  // Local file mode requires a BYOK key; deployed mode uses the proxy by default.
+  if (window.location.protocol === 'file:' && !localStorage.getItem('anthropic_api_key')) {
+    document.getElementById('api-banner')?.classList.add('visible');
+    return;
+  }
+  const apiKey = localStorage.getItem('anthropic_api_key') || '';
+
+  const btn = document.getElementById('gen-btn');
+  btn.disabled = true;
+  btn.textContent = '♩ Generating...';
+
+  const diff = Math.max(1, Math.min(10, parseInt(document.getElementById('gen-diff-slider').value) + diffOffset));
+  document.getElementById('gen-diff-slider').value = diff;
+  document.getElementById('gen-diff-val').textContent = diff;
+
+  const key = document.getElementById('gen-key').value;
+  const time = document.getElementById('gen-time').value;
+  const bars = document.getElementById('gen-bars').value;
+  const style = document.getElementById('gen-style').value;
+  const hand = document.getElementById('gen-hand').value;
+  const challenges = [...document.querySelectorAll('.challenge-tag.selected')].map(el => el.dataset.val);
+  const paramsKey = JSON.stringify({ diff, key, time, bars, style, hand, challenges: [...challenges].sort() });
+
+  try {
+    let xml, bpm, actualKey, actualStyle;
+
+    if (preGenCache && preGenCache.paramsKey === paramsKey) {
+      ({ xml, bpm, actualKey, actualStyle } = preGenCache);
+      preGenCache = null;
+      btn.textContent = '♩ Rendering...';
+    } else {
+      // Auto-retry up to 2 times on validation failures before surfacing the error
+      let lastErr;
+      for (let attempt = 0; attempt < 3; attempt++) {
+        try {
+          const result = await fetchExercise(diff, key, time, bars, style, hand, challenges, apiKey);
+          ({ xml, bpm, actualKey, actualStyle } = result);
+          lastErr = null;
+          break;
+        } catch(e) {
+          lastErr = e;
+          if (attempt < 2) { console.log(`Attempt ${attempt+1} failed:`, e.message); btn.textContent = `♩ Retrying... (${attempt + 2}/3)`; }
+        }
+      }
+      if (lastErr) throw lastErr;
+    }
+
+    const cleanedXml = sanitizeXml(xml);
+    await renderScore(cleanedXml);
+
+    document.getElementById('gen-card').style.display = 'block';
+    document.getElementById('gen-actions').style.display = 'flex';
+    document.getElementById('gen-btn').style.display = 'none';
+
+    document.getElementById('gen-style-display').textContent = actualStyle || 'Classical';
+    document.getElementById('gen-meta').innerHTML = `
+      <span class="meta-tag diff">Difficulty ${diff}/10</span>
+      <span class="meta-tag key">♩ ${actualKey || 'Various'}</span>
+      <span class="meta-tag tempo">♩ = ${bpm} suggested</span>
+      <span class="meta-tag">${bars} bars</span>
+      <span class="meta-tag">${hand === 'both' ? 'Both Hands' : hand === 'right' ? 'Right Hand' : 'Left Hand'}</span>
+      ${challenges.map(c => `<span class="meta-tag">${c}</span>`).join('')}
+    `;
+
+    state.gen.lastParams = { diff, key, time, bars, style, hand, challenges };
+    setMetronomeBpm('gen', bpm);
+    startMetronome('gen');
+
+    // Pre-generate next exercise silently in the background
+    preGenerateNext(diff, key, time, bars, style, hand, challenges, apiKey);
+
+  } catch(err) {
+    document.getElementById('osmd-container').innerHTML = `<div class="score-loading" style="color:#9e6a6a;">${err.message}</div>`;
+    document.getElementById('gen-card').style.display = 'block';
+    document.getElementById('gen-btn').style.display = '';
+  }
+
+  btn.disabled = false;
+  btn.textContent = '♩ Generate Exercise';
+}
+
+let preGenTimer = null;
+function triggerPreGen() {
+  // Skip pre-gen in local file mode without a BYOK key (proxy isn't available there).
+  if (window.location.protocol === 'file:' && !localStorage.getItem('anthropic_api_key')) return;
+  const apiKey = localStorage.getItem('anthropic_api_key') || '';
+  preGenCache = null;
+  if (preGenTimer) clearTimeout(preGenTimer);
+  preGenTimer = setTimeout(() => {
+    const diff = parseInt(document.getElementById('gen-diff-slider').value);
+    const key = document.getElementById('gen-key').value;
+    const time = document.getElementById('gen-time').value;
+    const bars = document.getElementById('gen-bars').value;
+    const style = document.getElementById('gen-style').value;
+    const hand = document.getElementById('gen-hand').value;
+    const challenges = [...document.querySelectorAll('.challenge-tag.selected')].map(el => el.dataset.val);
+    preGenerateNext(diff, key, time, bars, style, hand, challenges, apiKey);
+  }, 800);
+}
+
+function sanitizeXml(xml) {
+  // The MusicXML is now built deterministically from validated JSON,
+  // so most sanitization is no longer needed.
+  // We still apply key signature alters to ensure OSMD renders accidentals correctly.
+  xml = applyKeySignatureAlters(xml);
+  return xml;
+}
+
+function detectOverfullMeasures(xml) {
+  try {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(xml.replace(/<!DOCTYPE[^>]*>/g, ''), 'text/xml');
+    if (doc.querySelector('parsererror')) return 'XML parse error';
+
+    let divisions = 4, beats = 4, beatType = 4;
+    const stavesEl = doc.querySelector('staves');
+    const numStaves = stavesEl ? parseInt(stavesEl.textContent) : 1;
+
+    for (const measure of doc.querySelectorAll('measure')) {
+      const divEl = measure.querySelector('divisions');
+      if (divEl) divisions = parseInt(divEl.textContent) || 4;
+      const beatsEl = measure.querySelector('time > beats');
+      if (beatsEl) beats = parseInt(beatsEl.textContent) || 4;
+      const btEl = measure.querySelector('beat-type');
+      if (btEl) beatType = parseInt(btEl.textContent) || 4;
+      const measureLen = Math.round(divisions * beats * (4 / beatType));
+      const mNum = measure.getAttribute('number');
+
+      const staffDur = {};
+      for (let s = 1; s <= numStaves; s++) staffDur[s] = 0;
+      let passedBackup = false;
+      for (const node of measure.childNodes) {
+        if (node.nodeName === 'backup') { passedBackup = true; continue; }
+        if (node.nodeName === 'note') {
+          if (node.querySelector('chord')) continue;
+          const s = parseInt(node.querySelector('staff')?.textContent || (passedBackup ? 2 : 1));
+          const d = parseInt(node.querySelector('duration')?.textContent || '0');
+          if (staffDur[s] !== undefined) staffDur[s] += d;
+        }
+      }
+
+      for (let s = 1; s <= numStaves; s++) {
+        const dur = staffDur[s] || 0;
+        if (dur > measureLen * 1.05)
+          return `Measure ${mNum} has too many beats — please try again`;
+        if (dur < measureLen * 0.9)
+          return `Measure ${mNum} staff ${s} is incomplete (${dur} of ${measureLen} divisions) — please try again`;
+      }
+    }
+    return null;
+  } catch(e) { return null; }
+}
+
+function fixMeasures(xml) {
+  try {
+    const parser = new DOMParser();
+    const xmlClean = xml.replace(/<!DOCTYPE[^>]*>/g, '');
+    const doc = parser.parseFromString(xmlClean, 'text/xml');
+    if (doc.querySelector('parsererror')) return xml;
+
+    let divisions = 4, beats = 4, beatType = 4;
+
+    doc.querySelectorAll('measure').forEach(measure => {
+      const divEl = measure.querySelector('divisions');
+      if (divEl) divisions = parseInt(divEl.textContent) || 4;
+      const beatsEl = measure.querySelector('time > beats');
+      if (beatsEl) beats = parseInt(beatsEl.textContent) || 4;
+      const btEl = measure.querySelector('beat-type');
+      if (btEl) beatType = parseInt(btEl.textContent) || 4;
+      const measureLen = Math.round(divisions * beats * (4 / beatType));
+      const q = divisions;
+
+      // Fix backup durations: set to actual sum of notes before each backup
+      let runningDur = 0;
+      for (const node of measure.childNodes) {
+        if (node.nodeName === 'note') {
+          if (node.querySelector('chord')) continue;
+          runningDur += parseInt(node.querySelector('duration')?.textContent || '0');
+        } else if (node.nodeName === 'backup') {
+          const durEl = node.querySelector('duration');
+          if (durEl) durEl.textContent = runningDur;
+          runningDur = 0;
+        }
+      }
+
+      const stavesEl = measure.closest('part')?.querySelector('staves');
+      const numStaves = stavesEl ? parseInt(stavesEl.textContent) : 1;
+      if (numStaves < 2) return;
+
+      // Sum durations per staff to find missing rests
+      const staffDur = {1: 0, 2: 0};
+      measure.querySelectorAll('note').forEach(note => {
+        if (note.querySelector('chord')) return;
+        const s = parseInt(note.querySelector('staff')?.textContent || '1');
+        const d = parseInt(note.querySelector('duration')?.textContent || '0');
+        if (staffDur[s] !== undefined) staffDur[s] += d;
+      });
+
+      const durTypeMap = {
+        [q*4]:['whole',false],[q*2]:['half',false],[q]:['quarter',false],
+        [q/2]:['eighth',false],[q/4]:['16th',false],
+        [q*3]:['half',true],[Math.round(q*1.5)]:['quarter',true],[Math.round(q*0.75)]:['eighth',true]
+      };
+
+      [1, 2].forEach(s => {
+        const missing = Math.round(measureLen - staffDur[s]);
+        if (missing <= 0) return;
+        const entry = durTypeMap[missing];
+        if (!entry) return;
+        const [type, dotted] = entry;
+        const n = doc.createElement('note');
+        const r = doc.createElement('rest');
+        const dur = doc.createElement('duration'); dur.textContent = missing;
+        const v = doc.createElement('voice'); v.textContent = s;
+        const t = doc.createElement('type'); t.textContent = type;
+        const st = doc.createElement('staff'); st.textContent = s;
+        n.appendChild(r); n.appendChild(dur); n.appendChild(v);
+        n.appendChild(t); if (dotted) n.appendChild(doc.createElement('dot'));
+        n.appendChild(st);
+        measure.appendChild(n);
+      });
+    });
+
+    const serialized = new XMLSerializer().serializeToString(doc).replace(/ xmlns(:\w+)?="[^"]*"/g, '');
+    const withDecl = serialized.startsWith('<?xml') ? serialized : '<?xml version="1.0" encoding="UTF-8"?>' + serialized;
+    // Sanity check — if serialization broke the structure, return the original
+    if (!withDecl.includes('<score-partwise') || !withDecl.includes('</score-partwise>')) { console.log('fixMeasures: serialization broke structure, using original'); return xml; }
+    return withDecl;
+  } catch(e) {
+    return xml;
+  }
+}
+
+function applyKeySignatureAlters(xml) {
+  const fifthsMatch = xml.match(/<fifths>\s*(-?\d+)\s*<\/fifths>/);
+  if (!fifthsMatch) return xml;
+  const fifths = parseInt(fifthsMatch[1]);
+  if (fifths === 0) return xml;
+
+  // Build map of which steps need alteration and by how much
+  const sharpOrder = ['F','C','G','D','A','E','B'];
+  const flatOrder  = ['B','E','A','D','G','C','F'];
+  const alterMap = {};
+
+  if (fifths > 0) {
+    for (let i = 0; i < fifths && i < 7; i++) alterMap[sharpOrder[i]] = 1;
+  } else {
+    for (let i = 0; i < -fifths && i < 7; i++) alterMap[flatOrder[i]] = -1;
+  }
+
+  // For each <pitch> block, if the step needs alteration and has no <alter> yet, add it
+  xml = xml.replace(/<pitch>([\s\S]*?)<\/pitch>/g, (match, inner) => {
+    const stepMatch = inner.match(/<step>([A-G])<\/step>/);
+    if (!stepMatch) return match;
+    const step = stepMatch[1];
+    if (alterMap[step] === undefined) return match;
+    if (inner.includes('<alter>')) return match;
+    const alter = alterMap[step];
+    return match.replace(/<\/step>/, `</step><alter>${alter}</alter>`);
+  });
+
+  // Strip redundant <accidental> elements on notes that are diatonic to the key signature.
+  // These notes don't need visual accidentals — the key signature covers them.
+  xml = xml.replace(/(<note>[\s\S]*?<\/note>)/g, (noteBlock) => {
+    if (!noteBlock.includes('<pitch>')) return noteBlock;
+    const stepMatch = noteBlock.match(/<step>([A-G])<\/step>/);
+    if (!stepMatch) return noteBlock;
+    const step = stepMatch[1];
+    if (alterMap[step] === undefined) return noteBlock; // not a key-sig note, leave alone
+    // Remove <accidental> element — it's redundant for diatonic notes
+    return noteBlock.replace(/<accidental[^>]*>[^<]*<\/accidental>/g, '');
+  });
+
+  return xml;
+}
+
+async function renderScore(xml) {
+  const container = document.getElementById('osmd-container');
+  container.innerHTML = '<div class="score-loading"><div class="spinner"></div> Rendering score...</div>';
+
+  // Ensure XML declaration is present — OSMD requires it
+  xml = xml.trim();
+  if (!xml.startsWith('<?xml')) xml = '<?xml version="1.0" encoding="UTF-8"?>' + xml;
+  console.log('renderScore first 200 chars:', xml.slice(0, 200));
+  console.log('renderScore has score-partwise:', xml.includes('<score-partwise'));
+
+  try {
+    osmd = new opensheetmusicdisplay.OpenSheetMusicDisplay('osmd-container', {
+      autoResize: true,
+      backend: 'svg',
+      drawTitle: false,
+      drawComposer: false,
+      drawingParameters: 'compact',
+      autoBeam: true,
+      autoBeamOptions: {
+        beam_middle_rests_only: false,
+        beam_rests: false,
+        maintain_stem_directions: false,
+      },
+    });
+
+    const timeout = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('Render timed out — try generating again')), 15000)
+    );
+    await Promise.race([osmd.load(xml), timeout]);
+    osmd.render();
+    container.querySelectorAll('svg').forEach(s => { s.style.background = '#fff'; });
+  } catch(err) {
+    osmd = null;
+    container.innerHTML = `<div class="score-loading" style="color:#9e6a6a;">${err.message}<br><small>Try generating again.</small></div>`;
+  }
+}
+
+function regenerate(diffOffset) {
+  generateExercise(diffOffset);
+}
+
+function genNext() {
+  if (state.gen.lastParams) {
+    addToHistory('gen', `Difficulty ${state.gen.lastParams.diff}/10`, state.gen.lastParams.style || 'Classical', 'played');
+    state.gen.played++;
+    state.gen.streak++;
+    updateGenStats();
+    saveToStorage();
+  }
+  document.getElementById('gen-card').style.display = 'none';
+  document.getElementById('gen-actions').style.display = 'none';
+  document.getElementById('gen-btn').style.display = '';
+  stopMetronome('gen');
+}
+
+function genSkip() {
+  if (state.gen.lastParams) {
+    addToHistory('gen', `Difficulty ${state.gen.lastParams.diff}/10`, state.gen.lastParams.style || 'Classical', 'skipped');
+    state.gen.skipped++;
+    state.gen.streak = 0;
+    updateGenStats();
+    saveToStorage();
+  }
+  document.getElementById('gen-card').style.display = 'none';
+  document.getElementById('gen-actions').style.display = 'none';
+  document.getElementById('gen-btn').style.display = '';
+  stopMetronome('gen');
+}
+
+function updateGenStats() {
+  document.getElementById('gen-stat-played').textContent = state.gen.played;
+  document.getElementById('gen-stat-skipped').textContent = state.gen.skipped;
+  document.getElementById('gen-stat-streak').textContent = state.gen.streak;
+}
+
+// ============================================================
+// HISTORY
+// ============================================================
+function addToHistory(mode, title, sub, action) {
+  const list = mode === 'lib' ? state.lib.history : state.gen.history;
+  list.unshift({ title, sub, action, time: new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) });
+  renderHistory(mode);
+}
+
+function renderHistory(mode) {
+  const list = mode === 'lib' ? state.lib.history : state.gen.history;
+  const el = document.getElementById(`${mode}-history-list`);
+  if (list.length === 0) {
+    el.innerHTML = `<div class="history-empty">No ${mode === 'lib' ? 'pieces played' : 'exercises generated'} yet</div>`;
+    return;
+  }
+  el.innerHTML = list.map(h => `
+    <div class="history-item">
+      <div class="history-item-title"><strong>${h.title}</strong> — ${h.sub} <span style="color:var(--text3);font-size:10px;">${h.time}</span></div>
+      <span class="history-item-action ${h.action}">${h.action}</span>
+    </div>
+  `).join('');
+}
+
+function clearHistory(mode) {
+  if (mode === 'lib') state.lib.history = [];
+  else state.gen.history = [];
+  renderHistory(mode);
+  saveToStorage();
+}
+
+// ============================================================
+// METRONOME
+// ============================================================
+function getAudioCtx() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  return audioCtx;
+}
+
+function playClick(isAccent) {
+  try {
+    const ctx = getAudioCtx();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.frequency.value = isAccent ? 1000 : 800;
+    gain.gain.setValueAtTime(isAccent ? 0.4 : 0.25, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.05);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.05);
+  } catch(e) {}
+}
+
+function startMetronome(id) {
+  const m = state.metro[id];
+  stopMetronome(id);
+  m.running = true;
+  m.beatCount = 0;
+
+  const toggle = document.getElementById(`${id}-metro-toggle`);
+  toggle.textContent = 'On';
+  toggle.classList.add('on');
+
+  const interval = m.subdivision === 'eighth' ? (60000 / m.bpm) / 2 : 60000 / m.bpm;
+  m.intervalId = setInterval(() => {
+    m.beatState = !m.beatState;
+    const beat = document.getElementById(`${id}-beat`);
+    if (beat) beat.classList.toggle('active', m.beatState);
+    playClick(m.beatCount % (m.subdivision === 'eighth' ? 2 : 1) === 0);
+    m.beatCount++;
+  }, interval);
+}
+
+function stopMetronome(id) {
+  const m = state.metro[id];
+  if (m.intervalId) { clearInterval(m.intervalId); m.intervalId = null; }
+  m.running = false;
+  m.beatCount = 0;
+  const toggle = document.getElementById(`${id}-metro-toggle`);
+  if (toggle) { toggle.textContent = 'Off'; toggle.classList.remove('on'); }
+  const beat = document.getElementById(`${id}-beat`);
+  if (beat) beat.classList.remove('active');
+}
+
+function toggleMetronome(id) {
+  if (state.metro[id].running) stopMetronome(id);
+  else startMetronome(id);
+}
+
+function setMetronomeBpm(id, bpm) {
+  state.metro[id].bpm = bpm;
+  document.getElementById(`${id}-bpm-display`).textContent = bpm;
+  document.getElementById(`${id}-bpm-slider`).value = bpm;
+  if (state.metro[id].running) startMetronome(id);
+}
+
+function updateBpm(id, val) {
+  setMetronomeBpm(id, parseInt(val));
+}
+
+function adjustBpm(id, delta) {
+  const newBpm = Math.max(20, Math.min(240, state.metro[id].bpm + delta));
+  setMetronomeBpm(id, newBpm);
+}
+
+function setSubdivision(id, sub) {
+  state.metro[id].subdivision = sub;
+  document.getElementById(`${id}-sub-quarter`).classList.toggle('active', sub === 'quarter');
+  document.getElementById(`${id}-sub-eighth`).classList.toggle('active', sub === 'eighth');
+  if (state.metro[id].running) startMetronome(id);
+}
+
+// TAP TEMPO
+function tapTempo(id) {
+  const m = state.metro[id];
+  const now = Date.now();
+  m.tapTimes = m.tapTimes.filter(t => now - t < 3000);
+  m.tapTimes.push(now);
+  if (m.tapTimes.length >= 2) {
+    const intervals = [];
+    for (let i = 1; i < m.tapTimes.length; i++) intervals.push(m.tapTimes[i] - m.tapTimes[i-1]);
+    const avg = intervals.reduce((a,b) => a+b, 0) / intervals.length;
+    const bpm = Math.round(60000 / avg);
+    setMetronomeBpm(id, Math.max(20, Math.min(240, bpm)));
+  }
+}
+
+// ============================================================
+// BOOT
+// ============================================================
+window.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
