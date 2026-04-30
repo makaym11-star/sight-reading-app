@@ -101,6 +101,70 @@
     border: 1px solid var(--border2);
   }
 
+  /* WELCOME MODAL */
+  .welcome-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(4px);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+  }
+  .welcome-overlay.visible { display: flex; }
+  .welcome-modal {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius-lg);
+    padding: 2rem;
+    max-width: 480px;
+    width: 100%;
+    color: var(--text);
+  }
+  .welcome-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.75rem;
+    color: var(--accent);
+    margin-bottom: 1rem;
+  }
+  .welcome-body {
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--text2);
+  }
+  .welcome-body p { margin-bottom: 0.85rem; }
+  .welcome-body strong { color: var(--text); }
+  .welcome-body ul {
+    margin: 0.5rem 0 1rem 1.25rem;
+    padding: 0;
+  }
+  .welcome-body li { margin-bottom: 0.5rem; }
+  .welcome-note {
+    font-size: 12px;
+    color: var(--text3);
+    border-top: 1px solid var(--border);
+    padding-top: 0.85rem;
+    margin-top: 1rem;
+  }
+  .welcome-btn {
+    width: 100%;
+    margin-top: 1.25rem;
+    padding: 12px;
+    background: var(--accent-dim);
+    border: 1px solid var(--accent2);
+    border-radius: var(--radius);
+    color: var(--accent);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    letter-spacing: 0.04em;
+    transition: background 0.15s;
+  }
+  .welcome-btn:hover { background: rgba(200,169,110,0.25); }
+
   /* API KEY BANNER */
   .api-banner {
     background: var(--surface);
@@ -830,8 +894,26 @@
   <div class="app-header">
     <div class="app-title">Sight <span>Reading</span></div>
     <div class="mode-toggle">
-      <button class="mode-btn active" onclick="setMode('library')">IMSLP Library</button>
-      <button class="mode-btn" onclick="setMode('generated')">Generated</button>
+      <button class="mode-btn" onclick="setMode('library')">IMSLP Library</button>
+      <button class="mode-btn active" onclick="setMode('generated')">Generated</button>
+    </div>
+  </div>
+
+  <!-- WELCOME MODAL — shown once on first visit -->
+  <div class="welcome-overlay" id="welcome-overlay">
+    <div class="welcome-modal">
+      <div class="welcome-title">Welcome</div>
+      <div class="welcome-body">
+        <p><strong>Sight Reading Practice</strong> is a tool for pianists working on their reading skills.</p>
+        <p>The app has two modes:</p>
+        <ul>
+          <li><strong>Generated</strong> (active) — original exercises composed by Claude, tailored to your difficulty level (1–10), key, time signature, and challenge targets.</li>
+          <li><strong>IMSLP Library</strong> — a curated database of public-domain piano pieces.</li>
+        </ul>
+        <p>The philosophy: read each exercise once or twice, then click Next. Sight reading improves through breadth, not repetition.</p>
+        <p class="welcome-note">Demo mode includes 10 free generations per day. After that, you can enter your own Anthropic API key to keep going.</p>
+      </div>
+      <button class="welcome-btn" onclick="closeWelcome()">Get started</button>
     </div>
   </div>
 
@@ -846,7 +928,7 @@
   </div>
 
   <!-- ==================== LIBRARY MODE ==================== -->
-  <div class="panel active" id="panel-library">
+  <div class="panel" id="panel-library">
 
     <!-- FILTERS -->
     <div class="filters">
@@ -974,7 +1056,7 @@
   </div><!-- /panel-library -->
 
   <!-- ==================== GENERATED MODE ==================== -->
-  <div class="panel" id="panel-generated">
+  <div class="panel active" id="panel-generated">
 
     <!-- GEN CONTROLS -->
     <div class="gen-controls">
@@ -1404,7 +1486,7 @@ function exerciseToMusicXml(data, diff, hand) {
 // STATE
 // ============================================================
 let state = {
-  mode: 'library',
+  mode: 'generated',
   lib: {
     current: null,
     filtered: [],
@@ -1436,8 +1518,19 @@ function init() {
   applyLibraryFilters(false);
   loadLibraryPiece();
   updateKeyStatus();
+  showWelcomeIfFirstVisit();
   // Pre-generate first exercise in background
   setTimeout(triggerPreGen, 1000);
+}
+
+function showWelcomeIfFirstVisit() {
+  if (localStorage.getItem('welcome_dismissed') === '1') return;
+  document.getElementById('welcome-overlay')?.classList.add('visible');
+}
+
+function closeWelcome() {
+  localStorage.setItem('welcome_dismissed', '1');
+  document.getElementById('welcome-overlay')?.classList.remove('visible');
 }
 
 function loadFromStorage() {
