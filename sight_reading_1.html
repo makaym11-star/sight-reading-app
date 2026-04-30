@@ -1776,6 +1776,24 @@ async function handleProxyError(response) {
   throw new Error(`API error: ${response.status}`);
 }
 
+function recordDemoRemaining(response) {
+  const remaining = response.headers.get('x-demo-remaining');
+  if (remaining === null) return; // BYOK or proxy not configured — no rate limit
+  const today = new Date().toISOString().slice(0, 10);
+  localStorage.setItem('demo_remaining', JSON.stringify({ date: today, remaining: parseInt(remaining) }));
+  updateKeyStatus();
+}
+
+function getDemoRemaining() {
+  try {
+    const saved = JSON.parse(localStorage.getItem('demo_remaining') || 'null');
+    if (!saved) return null;
+    const today = new Date().toISOString().slice(0, 10);
+    if (saved.date !== today) return null; // stale, treat as fresh
+    return saved.remaining;
+  } catch(e) { return null; }
+}
+
 function updateKeyStatus() {
   const el = document.getElementById('key-status');
   const text = document.getElementById('key-status-text');
@@ -1794,7 +1812,10 @@ function updateKeyStatus() {
     };
   } else {
     el.classList.remove('byok');
-    text.textContent = 'Demo mode (10/day)';
+    const remaining = getDemoRemaining();
+    text.textContent = remaining !== null
+      ? `Demo mode (${remaining} left today)`
+      : 'Demo mode (10/day)';
     action.textContent = 'Use your own key';
     action.onclick = () => {
       document.getElementById('api-banner')?.classList.add('visible');
@@ -1966,6 +1987,7 @@ You output ONLY valid JSON matching the requested schema. No markdown, no explan
     }));
 
   await handleProxyError(response);
+  recordDemoRemaining(response);
 
   // Stream response — wait for [DONE] since JSON has no early-exit marker
   const reader = response.body.getReader();
@@ -2069,6 +2091,8 @@ async function generateExercise(diffOffset = 0) {
   const btn = document.getElementById('gen-btn');
   btn.disabled = true;
   btn.textContent = '♩ Generating...';
+  btn.style.display = '';
+  document.getElementById('gen-actions').style.display = 'none';
 
   const diff = Math.max(1, Math.min(10, parseInt(document.getElementById('gen-diff-slider').value) + diffOffset));
   document.getElementById('gen-diff-slider').value = diff;
