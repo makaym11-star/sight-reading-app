@@ -1330,7 +1330,41 @@ function isDiatonicToKey(pitch, keyFifths) {
   return !sharped.has(step) && !flatted.has(step);
 }
 
-function validateExerciseJSON(data, bars, hand, timeStr, diff) {
+const KEY_FIFTHS = {
+  'C major':0,'G major':1,'D major':2,'A major':3,'E major':4,'B major':5,'F# major':6,
+  'F major':-1,'Bb major':-2,'Eb major':-3,'Ab major':-4,'Db major':-5,
+  'A minor':0,'E minor':1,'B minor':2,'F# minor':3,'C# minor':4,'G# minor':5,
+  'D minor':-1,'G minor':-2,'C minor':-3,'F minor':-4,'Bb minor':-5,'Eb minor':-6
+};
+
+// Levels 1-4 keep each hand in a fixed five-finger position on the tonic.
+const FIVE_FINGER_MAX_DIFF = 4;
+
+// The five pitches (scale degrees 1-5) starting on the key's tonic in the given octave.
+// e.g. ('F major', 4) -> ['F4','G4','A4','Bb4','C5']; ('A minor', 3) -> ['A3','B3','C4','D4','E4']
+function fiveFingerPosition(keyName, octave) {
+  const letters = ['C','D','E','F','G','A','B'];
+  const fifths = KEY_FIFTHS[keyName] ?? 0;
+  const sharped = new Set(fifths > 0 ? ['F','C','G','D','A','E','B'].slice(0, fifths) : []);
+  const flatted = new Set(fifths < 0 ? ['B','E','A','D','G','C','F'].slice(0, -fifths) : []);
+  const start = letters.indexOf(keyName[0]);
+  const notes = [];
+  let oct = octave;
+  for (let i = 0; i < 5; i++) {
+    const idx = (start + i) % 7;
+    if (i > 0 && idx === 0) oct++; // crossed from B to C
+    const L = letters[idx];
+    notes.push(L + (sharped.has(L) ? '#' : flatted.has(L) ? 'b' : '') + oct);
+  }
+  return notes;
+}
+
+// Right hand: tonic in octave 4. Left hand: tonic in octave 3.
+function fiveFingerPositions(keyName) {
+  return { rh: fiveFingerPosition(keyName, 4), lh: fiveFingerPosition(keyName, 3) };
+}
+
+function validateExerciseJSON(data, bars, hand, timeStr, diff, positions) {
   if (!data || !Array.isArray(data.measures)) return 'Missing measures array';
   if (data.measures.length < parseInt(bars))
     return `Only ${data.measures.length} of ${bars} measures generated`;
@@ -1338,7 +1372,7 @@ function validateExerciseJSON(data, bars, hand, timeStr, diff) {
   const [b, bt] = (timeStr || data.time || '4/4').split('/').map(Number);
   const needed = Math.round(12 * b * (4 / bt));
   const keyFifths = data.keyFifths ?? 0;
-  const enforceDiatonic = diff != null && diff <= 4;
+  const enforceDiatonic = diff != null && diff <= FIVE_FINGER_MAX_DIFF && !positions;
 
   for (let i = 0; i < data.measures.length; i++) {
     const m = data.measures[i];
@@ -1354,6 +1388,15 @@ function validateExerciseJSON(data, bars, hand, timeStr, diff) {
             if (!isDiatonicToKey(p, keyFifths)) return `Measure ${n} RH: "${p}" is not diatonic to the key`;
         }
       }
+      if (positions) {
+        const allowed = new Set(positions.rh);
+        for (const note of m.rh) {
+          const pitches = Array.isArray(note[0]) ? note[0] : [note[0]];
+          for (const p of pitches)
+            if (p !== 'rest' && !allowed.has(p))
+              return `Measure ${n} RH: "${p}" is outside the five-finger position. RH may only use: ${positions.rh.join(' ')}`;
+        }
+      }
     }
     if (hand !== 'right') {
       if (!Array.isArray(m.lh)) return `Measure ${n} missing lh`;
@@ -1364,6 +1407,15 @@ function validateExerciseJSON(data, bars, hand, timeStr, diff) {
           const pitches = Array.isArray(note[0]) ? note[0] : [note[0]];
           for (const p of pitches)
             if (!isDiatonicToKey(p, keyFifths)) return `Measure ${n} LH: "${p}" is not diatonic to the key`;
+        }
+      }
+      if (positions) {
+        const allowed = new Set(positions.lh);
+        for (const note of m.lh) {
+          const pitches = Array.isArray(note[0]) ? note[0] : [note[0]];
+          for (const p of pitches)
+            if (p !== 'rest' && !allowed.has(p))
+              return `Measure ${n} LH: "${p}" is outside the five-finger position. LH may only use: ${positions.lh.join(' ')}`;
         }
       }
     }
@@ -1959,19 +2011,26 @@ async function fetchExercise(diff, key, time, bars, style, hand, challenges, api
   const actualTime = time === 'random' ? '' : time;
   const actualStyle = style === 'random' ? '' : style;
 
-  const keyFifthsMap = {
-    'C major':0,'G major':1,'D major':2,'A major':3,'E major':4,'B major':5,'F# major':6,
-    'F major':-1,'Bb major':-2,'Eb major':-3,'Ab major':-4,'Db major':-5,
-    'A minor':0,'E minor':1,'B minor':2,'F# minor':3,'C# minor':4,'G# minor':5,
-    'D minor':-1,'G minor':-2,'C minor':-3,'F minor':-4,'Bb minor':-5,'Eb minor':-6
-  };
-  const resolvedKey = actualKey || null;
-  const keyFifths = resolvedKey ? (keyFifthsMap[resolvedKey] ?? 0) : 0;
+  const useFiveFinger = diff <= FIVE_FINGER_MAX_DIFF;
+
+  // Five-finger levels need a concrete key up front so we can list the exact notes.
+  // For "Random", pick a level-appropriate key: up to 1 sharp/flat for levels 1-3, up to 2 for level 4.
+  let resolvedKey = actualKey || null;
+  if (!resolvedKey && useFiveFinger) {
+    const maxAcc = diff <= 3 ? 1 : 2;
+    const choices = Object.keys(KEY_FIFTHS).filter(k => Math.abs(KEY_FIFTHS[k]) <= maxAcc);
+    resolvedKey = choices[Math.floor(Math.random() * choices.length)];
+  }
+  const keyFifths = resolvedKey ? (KEY_FIFTHS[resolvedKey] ?? 0) : 0;
+  const positions = useFiveFinger ? fiveFingerPositions(resolvedKey) : null;
+
+  // Accidentals can't happen inside a five-finger position, so drop that challenge at these levels.
+  if (useFiveFinger) challenges = challenges.filter(c => c !== 'accidentals');
 
   const diffDesc = [
     '',
     `Level 1/10 — Absolute beginner. 5-finger position of the selected key only. Whole/half/quarter notes only. Stepwise motion only — no skips. NO chords. Hands NEVER simultaneous — when rh has a note, lh MUST have "rest" for that exact duration, and vice versa. Vary note values and phrase shapes. Phrases end on tonic. Tempo 50–60.`,
-    `Level 2/10 — Bridge level. 5-finger position, slightly extended range. Same key as level 1. Whole/half/quarter/dotted-half notes. Mostly stepwise; an occasional 3rd is ok. NO chords. RULE: one hand plays a moving melody while the other either holds a single sustained note (half or whole) OR rests — never both moving at once. EITHER hand can carry the melody — vary this freely across the exercise. Sometimes lh plays the melody while rh holds a sustained note; sometimes rh plays while lh holds; sometimes one plays while the other rests entirely. Mix all these patterns. Phrases end on tonic. Tempo 56–69.`,
+    `Level 2/10 — Bridge level. Same fixed five-finger position as level 1 (no extended range). Whole/half/quarter/dotted-half notes. Mostly stepwise; an occasional 3rd is ok. NO chords. RULE: one hand plays a moving melody while the other either holds a single sustained note (half or whole) OR rests — never both moving at once. EITHER hand can carry the melody — vary this freely across the exercise. Sometimes lh plays the melody while rh holds a sustained note; sometimes rh plays while lh holds; sometimes one plays while the other rests entirely. Mix all these patterns. Phrases end on tonic. Tempo 56–69.`,
     `Level 3/10 — RCM Prep B. Keys 0–1 sharps/flats. Whole/half/quarter/dotted-half; eighth notes introduced simply. Mostly stepwise; thirds ok. Light two-hand coordination: RH plays melody, LH provides simple single-note support or rests. NO chords in either hand — single notes only. LH notes are mostly long (half/whole). Tempo 60–76.`,
     `Level 4/10 — ABRSM Gr.1. Keys up to 2 sharps/flats. Quarter/half/whole/eighth notes. RH melody (single notes only). LH may now occasionally play simple DYADS — two-note intervals (a 5th or 3rd) as block intervals, not yet full triads. Most LH notes are still single. No chords in RH. Tempo 66–88.`,
     `Level 5/10 — ABRSM Gr.2–3. Keys up to 3 sharps/flats. Eighth notes; dotted quarter-eighth; 6/8. LH uses dyads regularly and may introduce simple ROOT-POSITION TRIADS (3 notes) as occasional block chords — not every beat. Alberti bass (broken single notes) also ok in LH. RH remains single notes or simple dyads at phrase peaks. Moderate independence. Tempo 76–108.`,
@@ -2052,7 +2111,14 @@ Length: ${bars} measures
 Style: ${actualStyle || 'classical'}
 Challenges: ${challenges.length > 0 ? challenges.join(', ') : 'general sight reading'}
 Hand: ${handDesc}
-
+${positions ? `
+FIVE-FINGER POSITION — STRICT RULE FOR THIS LEVEL:
+Each hand rests on five adjacent keys starting on the tonic and NEVER moves for the whole exercise. No shifts, no extensions, no accidentals.
+${hand !== 'left' ? `- Right hand may ONLY use these 5 pitches: ${positions.rh.join(' ')}  (thumb on ${positions.rh[0]}, pinky on ${positions.rh[4]})\n` : ''}${hand !== 'right' ? `- Left hand may ONLY use these 5 pitches: ${positions.lh.join(' ')}  (pinky on ${positions.lh[0]}, thumb on ${positions.lh[4]})\n` : ''}- Write each pitch exactly as listed (same spelling and octave). "rest" is always allowed.
+- The widest possible interval is a 5th. Any challenge targets must be met inside these five notes.
+- End phrases on the tonic (${positions.rh[0].slice(0, -1)}), approached from the 2nd or 5th degree.
+- Any pitch not in the list makes the exercise invalid.
+` : ''}
 Return ONLY a JSON object (no markdown, no explanation) with this structure:
 {
   "key": "KEY NAME",
@@ -2094,7 +2160,7 @@ THE 10-LEVEL SCALE:
 Level 1=Hands separate, stepwise, 5-finger | Level 2=One hand holds while other plays | Level 3=Light two-hand, single notes only | Level 4=LH occasional dyads (2-note intervals) | Level 5=LH dyads+triads, Alberti bass, RH single notes | Level 6=LH triads freely, RH dyads at peaks | Level 7=Both hands triads+7ths | Level 8=Full chords both hands, octaves | Level 9=Virtuosic density | Level 10=Concert virtuoso
 
 MUSIC THEORY — always apply:
-- Phrases end on the tonic, approached stepwise (scale degree 2→1 or 7→1)
+- Phrases end on the tonic, approached stepwise (scale degree 2→1, or 7→1 when the 7th is available)
 - Use antecedent/consequent pairs: first phrase ends on dominant, second resolves to tonic
 - Melodies have a natural arch; exercises are singable and feel complete
 - Each generation is varied — never repeat the same pattern
@@ -2148,13 +2214,17 @@ You output ONLY valid JSON matching the requested schema. No markdown, no explan
   try { data = JSON.parse(jsonText); }
   catch(e) { throw new Error('Invalid JSON response — please try again'); }
 
-  // Validate beat arithmetic — the key quality gate
-  const jsonError = validateExerciseJSON(data, bars, hand, actualTime, diff);
+  // At five-finger levels the key was chosen in code, so make the score match it
+  if (positions) { data.key = resolvedKey; data.keyFifths = keyFifths; }
+
+  // Validate beat arithmetic (and five-finger position) — the key quality gate
+  const jsonError = validateExerciseJSON(data, bars, hand, actualTime, diff, positions);
   if (jsonError) {
     // Self-correction: send back to Haiku with the specific error
     try {
       data = await selfCorrectJson(data, jsonError, bars, hand, actualTime, apiKey);
-      const retry = validateExerciseJSON(data, bars, hand, actualTime, diff);
+      if (positions) { data.key = resolvedKey; data.keyFifths = keyFifths; }
+      const retry = validateExerciseJSON(data, bars, hand, actualTime, diff, positions);
       if (retry) throw new Error(retry);
     } catch(e) {
       throw new Error(jsonError);
@@ -2173,9 +2243,9 @@ async function selfCorrectJson(data, error, bars, hand, timeStr, apiKey) {
       max_tokens: 4000,
       messages: [{
         role: 'user',
-        content: `This music exercise JSON has a beat-count error: "${error}"
+        content: `This music exercise JSON has an error: "${error}"
 
-Fix ONLY the incorrect measure(s) so every rh and lh array sums to the correct number of beats for the time signature. Do not change notes that are correct. Return ONLY the corrected JSON object.
+Fix ONLY the incorrect measure(s). Every rh and lh array must sum to the correct number of beats for the time signature, and if the error lists allowed pitches, every pitch in that hand must come from that list. Do not change notes that are correct. Return ONLY the corrected JSON object.
 
 Duration codes: "w"=4 "h"=2 "q"=1 "e"=½ "s"=¼ "dh"=3 "dq"=1½ "de"=¾ "tq"=⅔ "te"=⅓
 
