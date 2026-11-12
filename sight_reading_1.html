@@ -1519,8 +1519,6 @@ function init() {
   loadLibraryPiece();
   updateKeyStatus();
   showWelcomeIfFirstVisit();
-  // Pre-generate first exercise in background
-  setTimeout(triggerPreGen, 1000);
 }
 
 function showWelcomeIfFirstVisit() {
@@ -2192,14 +2190,21 @@ ${JSON.stringify(data, null, 2)}`
   return JSON.parse(text.slice(s, e2 + 1));
 }
 
+let preGenInFlight = null; // { paramsKey, promise } while a background generation is running
+
 async function preGenerateNext(diff, key, time, bars, style, hand, challenges, apiKey) {
-  try {
-    const paramsKey = JSON.stringify({ diff, key, time, bars, style, hand, challenges: [...challenges].sort() });
-    const result = await fetchExercise(diff, key, time, bars, style, hand, challenges, apiKey);
-    preGenCache = { ...result, paramsKey };
-  } catch(e) {
-    preGenCache = null;
-  }
+  const paramsKey = JSON.stringify({ diff, key, time, bars, style, hand, challenges: [...challenges].sort() });
+  const promise = (async () => {
+    try {
+      const result = await fetchExercise(diff, key, time, bars, style, hand, challenges, apiKey);
+      preGenCache = { ...result, paramsKey };
+    } catch(e) {
+      preGenCache = null;
+    }
+  })();
+  preGenInFlight = { paramsKey, promise };
+  await promise;
+  if (preGenInFlight && preGenInFlight.promise === promise) preGenInFlight = null;
 }
 
 async function generateExercise(diffOffset = 0) {
@@ -2230,6 +2235,12 @@ async function generateExercise(diffOffset = 0) {
 
   try {
     let xml, bpm, actualKey, actualStyle;
+
+    // If the matching exercise is still being prepared in the background,
+    // wait for it instead of starting a second (credit-using) request.
+    if (!preGenCache && preGenInFlight && preGenInFlight.paramsKey === paramsKey) {
+      await preGenInFlight.promise;
+    }
 
     if (preGenCache && preGenCache.paramsKey === paramsKey) {
       ({ xml, bpm, actualKey, actualStyle } = preGenCache);
@@ -2286,23 +2297,12 @@ async function generateExercise(diffOffset = 0) {
   btn.textContent = '♩ Generate Exercise';
 }
 
-let preGenTimer = null;
+// Called when a generation setting changes. Only discards a pre-generated
+// exercise that no longer matches; it does NOT start a new API call, so
+// adjusting settings never uses demo credits. Pre-generation happens only
+// after an exercise renders (see generateExercise).
 function triggerPreGen() {
-  // Skip pre-gen in local file mode without a BYOK key (proxy isn't available there).
-  if (window.location.protocol === 'file:' && !localStorage.getItem('anthropic_api_key')) return;
-  const apiKey = localStorage.getItem('anthropic_api_key') || '';
   preGenCache = null;
-  if (preGenTimer) clearTimeout(preGenTimer);
-  preGenTimer = setTimeout(() => {
-    const diff = parseInt(document.getElementById('gen-diff-slider').value);
-    const key = document.getElementById('gen-key').value;
-    const time = document.getElementById('gen-time').value;
-    const bars = document.getElementById('gen-bars').value;
-    const style = document.getElementById('gen-style').value;
-    const hand = document.getElementById('gen-hand').value;
-    const challenges = [...document.querySelectorAll('.challenge-tag.selected')].map(el => el.dataset.val);
-    preGenerateNext(diff, key, time, bars, style, hand, challenges, apiKey);
-  }, 800);
 }
 
 function sanitizeXml(xml) {
