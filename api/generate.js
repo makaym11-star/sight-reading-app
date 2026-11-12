@@ -7,6 +7,10 @@ export const config = { runtime: 'edge' };
 
 const DAILY_DEMO_LIMIT = 10;
 
+// Only these models may be called with the server key, and output is capped.
+const ALLOWED_MODELS = new Set(['claude-haiku-4-5-20251001', 'claude-sonnet-4-6']);
+const MAX_TOKENS_CAP = 4000;
+
 // Per-IP daily counter via Upstash Redis REST API.
 // If env vars are not configured, rate limiting is disabled (useful for first deploys).
 async function checkDemoRateLimit(ip) {
@@ -18,13 +22,24 @@ async function checkDemoRateLimit(ip) {
   const key = `gen:${ip}:${today}`;
   const headers = { Authorization: `Bearer ${token}` };
 
-  const incrRes = await fetch(`${baseUrl}/incr/${encodeURIComponent(key)}`, { headers });
-  const incrJson = await incrRes.json();
-  const count = incrJson.result;
-
-  if (count === 1) {
-    // Set expiry to 26 hours so it cleans up reliably after the calendar day rolls
-    await fetch(`${baseUrl}/expire/${encodeURIComponent(key)}/93600`, { headers });
+  // If the KV/Upstash store is unreachable or misconfigured, don't crash the whole
+  // function. Let the request through (cost is still bounded by the model
+  // whitelist and max_tokens cap below) and log so it shows up in Vercel logs.
+  let count;
+  try {
+    const incrRes = await fetch(`${baseUrl}/incr/${encodeURIComponent(key)}`, { headers });
+    const incrJson = await incrRes.json();
+    if (!incrRes.ok || typeof incrJson.result !== 'number') {
+      throw new Error(`KV incr failed: ${incrRes.status} ${JSON.stringify(incrJson).slice(0, 200)}`);
+    }
+    count = incrJson.result;
+    if (count === 1) {
+      // Set expiry to 26 hours so it cleans up reliably after the calendar day rolls
+      await fetch(`${baseUrl}/expire/${encodeURIComponent(key)}/93600`, { headers });
+    }
+  } catch (err) {
+    console.error('Rate limit check failed, allowing request:', err?.message || err);
+    return { ok: true, remaining: -1, configured: false };
   }
 
   return {
@@ -80,7 +95,22 @@ export default async function handler(req) {
     }
   }
 
-  const body = await req.text();
+  let body = await req.text();
+
+  // When using the server key, only allow the app's own models and output size.
+  if (!byokKey) {
+    let parsed;
+    try { parsed = JSON.parse(body); } catch (e) {
+      return new Response(JSON.stringify({ error: 'bad_request', message: 'Invalid JSON body.' }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } });
+    }
+    if (!ALLOWED_MODELS.has(parsed.model)) {
+      return new Response(JSON.stringify({ error: 'bad_request', message: 'Model not allowed.' }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } });
+    }
+    parsed.max_tokens = Math.min(Number(parsed.max_tokens) || MAX_TOKENS_CAP, MAX_TOKENS_CAP);
+    body = JSON.stringify(parsed);
+  }
 
   const upstream = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
